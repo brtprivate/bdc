@@ -1,8 +1,13 @@
-# TODO: Add Optional Referral ID Prompt on Registration
+# Production Error Fixes
 
-## Tasks
-- [x] Add state for showing referral input field
-- [x] Modify registration alert to include referral code input when "Register Now" is clicked
-- [x] Update handleRegister to use entered referral code or default
-- [x] Add "Register" button to submit with referral code
-- [ ] Test registration with and without referral code
+## Issues Identified:
+1. **CSP Framing Error**: WalletConnect iframe blocked by Content Security Policy
+2. **Coinbase Metrics 401**: Unauthorized analytics requests despite analytics being disabled
+3. **Multiple Web3Modal Customizations**: Excessive console logs from repeated customizer runs
+
+## Tasks:
+- [x] Add CSP headers to allow WalletConnect framing
+- [x] Remove or fix Coinbase analytics calls (CSP allows the domain)
+- [x] Optimize Web3Modal customizer to prevent multiple runs
+- [ ] Test fixes in production environment
+- [ ] Rebuild and redeploy application

@@ -1,6 +1,10 @@
 // Simple Web3Modal Trust Wallet Priority
+let isInitialized = false;
 
 export const customizeWeb3Modal = () => {
+  if (isInitialized) return;
+  isInitialized = true;
+
   console.log('🔧 Starting Web3Modal customization...');
 
   const observer = new MutationObserver(() => {
@@ -60,7 +64,6 @@ const customizeModalContent = () => {
 // Auto-start customization when module is imported
 if (typeof window !== 'undefined') {
   customizeWeb3Modal();
-  setTimeout(customizeWeb3Modal, 500);
 
   document.addEventListener('click', () => {
     setTimeout(customizeWeb3Modal, 100);
@@ -234,12 +237,6 @@ const addCustomStyling = () => {
 
 // Auto-start customization when module is imported
 if (typeof window !== 'undefined') {
-  // Start customization immediately and repeatedly
-  customizeWeb3Modal();
-  setTimeout(customizeWeb3Modal, 100);
-  setTimeout(customizeWeb3Modal, 500);
-  setTimeout(customizeWeb3Modal, 1000);
-
   // Run on page load
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', customizeWeb3Modal);
@@ -250,10 +247,6 @@ if (typeof window !== 'undefined') {
     const target = e.target as HTMLElement;
     if (target && (target.textContent?.includes('Connect') || target.closest('w3m-modal'))) {
       setTimeout(customizeWeb3Modal, 100);
-      setTimeout(customizeWeb3Modal, 500);
     }
   });
-
-  // Run periodically to catch modal opens
-  setInterval(customizeWeb3Modal, 2000);
 }
