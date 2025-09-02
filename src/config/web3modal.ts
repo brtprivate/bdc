@@ -6,8 +6,8 @@ const projectId = 'b0cebcda95846f0aabc833a9f05dca99';
 const metadata = {
   name: 'safemin MLM',
   description: 'safemin MLM Platform',
-  url: 'https://safemin.io/',
-  icons: ['https://safemin.io/favicon.ico']
+  url: 'https://bdcstack.com/',
+  icons: ['https://bdcstack.com/favicon.ico']
 };
 
 const bscChain = {

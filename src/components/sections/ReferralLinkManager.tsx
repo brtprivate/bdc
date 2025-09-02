@@ -53,7 +53,7 @@ const ReferralLinkManager: React.FC = () => {
     if (navigator.share) {
       navigator.share({
         title: 'Join safemint MLM Platform',
-        text: 'Join me on safemint - the amazing MLM investment platform!',
+        text: 'Join me on bdc - the amazing MLM investment platform!',
         url: link,
       }).then(() => {
         setShareSuccess(true);
