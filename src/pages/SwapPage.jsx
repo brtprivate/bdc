@@ -50,6 +50,7 @@ const SwapPage = () => {
       try {
         const tokenAmount = parseUnits(value, 18);
         const daiOutput = await dwcContractInteractions.tokensToDai(tokenAmount);
+        console.log("🚀 ~ handleAmountChange ~ daiOutput:", daiOutput)
         setDaiAmount(formatUnits(daiOutput, 18));
       } catch (err) {
         console.error('Error calculating DAI amount:', err);
@@ -82,6 +83,7 @@ const SwapPage = () => {
     setError('');
     try {
       const amount = parseUnits(dwcAmount, 18);
+      console.log("🚀 ~ handleSwap ~ amount:", amount)
       await dwcContractInteractions.tokenSwap(amount, wallet.account);
       setError('Swap successful');
       setDwcAmount('');
@@ -104,80 +106,107 @@ const SwapPage = () => {
   }
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-        Swap DWC to DAI
-      </Typography>
 
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3, boxShadow: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <AccountBalanceWalletIcon sx={{ color: 'primary.main', mr: 1 }} />
-                <Typography variant="h6">Your DWC Balance</Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                {dwcBalance.toFixed(4)} DWC
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+    <Container
+      fullWidth
+      maxWidth="md"
 
-        <Grid item xs={12} md={6}>
-          <Card sx={{ p: 3, boxShadow: 3 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>Swap Calculator</Typography>
-              <TextField
-                fullWidth
-                label="DWC Amount"
-                type="number"
-                value={dwcAmount}
-                onChange={(e) => handleAmountChange(e.target.value)}
-                sx={{ mb: 2 }}
-              />
-              <Typography variant="body1">
-                Expected DAI Output: {daiAmount ? parseFloat(daiAmount).toFixed(4) : '0.0000'} DAI
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "80vh",
+      }}
+    >
+      <Card sx={{ p: 4, borderRadius: 3, boxShadow: 4 }}>
+        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold', textAlign: 'center' }}>
+          Swap BDC → DAI
+        </Typography>
 
-        <Grid item xs={12}>
-          <Paper sx={{ p: 3, boxShadow: 3 }}>
-            <Typography variant="h6" gutterBottom>Swap Actions</Typography>
-            {error && (
-              <Alert severity={error.includes('successful') ? 'success' : 'error'} sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Button
-                variant="outlined"
-                onClick={handleApprove}
-                disabled={isApproving || !dwcAmount}
-                startIcon={isApproving ? <CircularProgress size={20} /> : null}
-              >
-                {isApproving ? 'Approving...' : 'Approve DWC'}
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleSwap}
-                disabled={isSwapping || !dwcAmount || parseFloat(dwcAmount) > dwcBalance}
-                startIcon={isSwapping ? <CircularProgress size={20} /> : <SwapHorizIcon />}
-              >
-                {isSwapping ? 'Swapping...' : 'Swap DWC to DAI'}
-              </Button>
-            </Box>
-            {parseFloat(dwcAmount) > dwcBalance && (
-              <Alert severity="warning" sx={{ mt: 2 }}>
-                Insufficient DWC balance
-              </Alert>
-            )}
-          </Paper>
-        </Grid>
-      </Grid>
+        {/* Input: DWC */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            From (DWC)
+          </Typography>
+          <TextField
+            fullWidth
+            type="number"
+            value={dwcAmount}
+            onChange={(e) => handleAmountChange(e.target.value)}
+            placeholder="0.00"
+            InputProps={{
+              endAdornment: (
+                <Button
+                  size="small"
+                  onClick={() => handleAmountChange(dwcBalance.toString())}
+                  // onClick={() => setDwcAmount(dwcBalance.toString())}
+                  sx={{ ml: 1 }}
+                >
+                  Max
+                </Button>
+              ),
+            }}
+          />
+          <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: 'text.secondary' }}>
+            Balance: {dwcBalance.toFixed(4)} DWC
+          </Typography>
+        </Box>
+
+        {/* Swap Icon */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+          <SwapHorizIcon sx={{ fontSize: 32, color: 'primary.main' }} />
+        </Box>
+
+        {/* Output: DAI */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+            To (DAI)
+          </Typography>
+          <TextField
+            fullWidth
+            disabled
+            value={daiAmount ? parseFloat(daiAmount).toFixed(4) : '0.0000'}
+            placeholder="0.00"
+          />
+        </Box>
+
+        {/* Actions */}
+        {error && (
+          <Alert severity={error.includes('successful') ? 'success' : 'error'} sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {/* <Button
+            variant="outlined"
+            fullWidth
+            onClick={handleApprove}
+            disabled={isApproving || !dwcAmount}
+            startIcon={isApproving ? <CircularProgress size={20} /> : null}
+          >
+            {isApproving ? 'Approving...' : 'Approve'}
+          </Button> */}
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleSwap}
+            disabled={isSwapping || !dwcAmount || parseFloat(dwcAmount) > dwcBalance}
+            startIcon={isSwapping ? <CircularProgress size={20} /> : null}
+          >
+            {isSwapping ? 'Swapping...' : 'Swap'}
+          </Button>
+        </Box>
+
+        {parseFloat(dwcAmount) > dwcBalance && (
+          <Alert severity="warning" sx={{ mt: 2 }}>
+            Insufficient DWC balance
+          </Alert>
+        )}
+      </Card>
     </Container>
+
+
   );
 };
 

@@ -159,7 +159,7 @@ const MyHolding = () => {
       setError('');
       setSuccess('');
 
-      const txHash = await dwcContractInteractions.rewardWithdraw(0, wallet.account);
+      const txHash = await dwcContractInteractions.rewardWithdraw(index, wallet.account);
       setSuccess(`Successfully withdrawn reward! Transaction: ${txHash}`);
       setTimeout(fetchHoldingData, 3000);
     } catch (error) {
@@ -253,7 +253,7 @@ const MyHolding = () => {
             <Button
               color="inherit"
               size="small"
-              onClick={() => {/* Add registration logic or redirect */}}
+              onClick={() => {/* Add registration logic or redirect */ }}
             >
               Register Now
             </Button>
@@ -392,7 +392,7 @@ const MyHolding = () => {
                       <Button
                         variant="contained"
                         size="small"
-                        onClick={() => handleWithdraw(0)}
+                        onClick={() => handleWithdraw(index)}
                         disabled={isLoading}
                       >
                         Withdraw

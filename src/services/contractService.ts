@@ -1143,7 +1143,9 @@ export const dwcContractInteractions: DWCContractInteractions = {
     account: Address
   ): Promise<`0x${string}`> {
     try {
-      console.log(`Swapping ${formatEther(tokenAmount)} DWC for USDC`);
+      console.log(
+        `Swapping ${formatEther(tokenAmount)} DWC for USDC,${account}`
+      );
       const balance = await this.getDWCBalance(account);
       if (balance < tokenAmount) {
         throw new Error(
@@ -1902,7 +1904,11 @@ export const dwcContractInteractions: DWCContractInteractions = {
           chainId: TESTNET_CHAIN_ID,
         }) as Promise<bigint>,
       ]);
-      console.log("🚀 ~ getLiquidityPool ~ tokenAmount, daiAmount:", tokenAmount, daiAmount)
+      console.log(
+        "🚀 ~ getLiquidityPool ~ tokenAmount, daiAmount:",
+        tokenAmount,
+        daiAmount
+      );
       console.log(
         `Liquidity pool: ${formatEther(tokenAmount)} DWC, ${formatEther(
           daiAmount
