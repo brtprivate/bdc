@@ -7,6 +7,8 @@ import {
   Box,
   CircularProgress,
   Alert,
+  IconButton,
+  LinearProgress,
 } from '@mui/material';
 import { useWallet } from '../../context/WalletContext';
 import { useChainId, useSwitchChain } from 'wagmi';
@@ -16,6 +18,8 @@ import { TESTNET_CHAIN_ID, dwcContractInteractions, USDC_ABI } from '../../servi
 
 // Icons
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -25,6 +29,7 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import PeopleIcon from '@mui/icons-material/People';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PoolIcon from '@mui/icons-material/Pool';
+import { Link2Icon } from 'lucide-react';
 const ContractStatsSection = () => {
   const wallet = useWallet();
   const chainId = useChainId();
@@ -44,6 +49,8 @@ const ContractStatsSection = () => {
     lastUserId: 0,
     userRank: 0,
     liquidityPoolFund: 0,
+    liquidityPoolFundUSDT: 0,
+    userStatus: 'INACTIVE',
   });
 
   // Fetch BNB balance
@@ -52,6 +59,19 @@ const ContractStatsSection = () => {
     chainId: TESTNET_CHAIN_ID,
   });
 
+
+  // Helper function to get rank label
+  const getRankLabel = (rank) => {
+    switch (Number(rank)) {
+      case 0: return 'Holder';
+      case 1: return 'Expert';
+      case 2: return 'Star';
+      case 3: return 'Two Star';
+      case 4: return 'Three Star';
+      case 5: return 'Five Star';
+      default: return 'Holder';
+    }
+  };
   const fetchStatsData = async () => {
     if (!wallet.isConnected || !wallet.account) {
       setError('Wallet not connected. Please connect your wallet.');
@@ -80,6 +100,7 @@ const ContractStatsSection = () => {
         totalSupply,
         burnedTokens,
         lastUserId,
+        maxPayout
       ] = await Promise.all([
         dwcContractInteractions.getUSDCBalance(wallet.account),
         dwcContractInteractions.getDWCBalance(wallet.account),
@@ -89,6 +110,7 @@ const ContractStatsSection = () => {
         dwcContractInteractions.getTotalSupply(),
         dwcContractInteractions.getBurnedTokens(),
         dwcContractInteractions.getLastUserId(),
+        dwcContractInteractions.getMaxPayout(wallet.account)
       ]);
 
       const [communityDWCBalance, communityUSDCBalance] = await Promise.all([
@@ -97,6 +119,8 @@ const ContractStatsSection = () => {
       ]);
 
       const liquidityPool = await dwcContractInteractions.getLiquidityPool();
+
+
 
       setStatsData({
         bnbBalance: bnbBalance ? parseFloat(formatUnits(bnbBalance.value, 18)) : 0,
@@ -109,8 +133,13 @@ const ContractStatsSection = () => {
         totalSupply: parseFloat(formatUnits(totalSupply, 18)),
         burnedTokens: parseFloat(formatUnits(burnedTokens, 18)),
         lastUserId: Number(lastUserId),
-        userRank: Number(userRank.rank),
-        liquidityPoolFund: parseFloat(formatUnits(liquidityPool.tokenAmount, 18)),
+        userRank: getRankLabel(userRank.rank),
+        user: userRank,
+        totalDeposit: parseFloat(formatUnits(userInfo.totalDeposit, 18)),
+        maxPayout: parseFloat(formatUnits(maxPayout, 18)),
+        liquidityPoolFund: parseFloat(formatUnits(liquidityPool.daiAmount, 18)),
+        liquidityPoolFundUSDT: parseFloat(formatUnits(liquidityPool.tokenAmount, 18)),
+        userStatus: userInfo.totalDeposit > 0 ? 'ACTIVE' : 'INACTIVE',
       });
     } catch (error) {
       console.error('Error fetching stats data:', error);
@@ -206,14 +235,14 @@ const ContractStatsSection = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                 <MonetizationOnIcon sx={{ color: 'secondary.main', mr: 1, fontSize: '1.5rem' }} />
                 <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
-                  USDC Balance
+                  USDT Balance
                 </Typography>
               </Box>
               <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'secondary.main', fontSize: '1.25rem' }}>
                 {formatCurrency(statsData.usdcBalance)}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                USDC
+                USDT
               </Typography>
             </CardContent>
           </Card>
@@ -263,20 +292,21 @@ const ContractStatsSection = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                 <BarChartIcon sx={{ color: 'info.main', mr: 1, fontSize: '1.5rem' }} />
                 <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
-                  Community Fund USDC
+                  Community Fund USDT
                 </Typography>
               </Box>
               <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'info.main', fontSize: '1.25rem' }}>
                 {formatCurrency(statsData.communityFundUSDC)}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                USDC
+                USDT
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        {/* Referral Address */}
+        {/* <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
@@ -293,6 +323,59 @@ const ContractStatsSection = () => {
               </Typography>
             </CardContent>
           </Card>
+        </Grid> */}
+
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ p: 2, boxShadow: 2 }}>
+            <CardContent>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <LinkIcon sx={{ color: "primary.main", mr: 1, fontSize: "1.5rem" }} />
+                  <Typography variant="h6" sx={{ fontSize: "0.9rem" }}>
+                    Your Referral Link
+                  </Typography>
+                </Box>
+
+
+              </Box>
+
+              <Typography
+                variant="body1"
+                sx={{
+                  mt: 1,
+                  wordBreak: "break-all",
+                  color: "text.secondary",
+                  fontSize: "0.9rem",
+                }}
+              >
+                {`${window.location.origin}`}  {/* Icon button instead of text button */}
+                <IconButton
+                  onClick={() => {
+                    const refLink = `${window.location.origin}?ref=${statsData.referralAddress}`;
+                    navigator.clipboard.writeText(refLink);
+                    alert("Referral link copied to clipboard!");
+                  }}
+                  sx={{
+                    color: "black",
+
+                    // backgroundColor: "primary.main",
+                    // "&:hover": {
+                    //   opacity: 0.9,
+                    //   backgroundColor: "primary.dark",
+                    // },
+                  }}
+                >
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Typography>
+            </CardContent>
+          </Card>
         </Grid>
 
         <Grid item xs={12} sm={6} md={4}>
@@ -301,7 +384,7 @@ const ContractStatsSection = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
                 <PersonIcon sx={{ color: 'secondary.main', mr: 1, fontSize: '1.5rem' }} />
                 <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
-                Sponsor Address
+                  Sponsor Address
                 </Typography>
               </Box>
               <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'secondary.main', fontSize: '1rem' }}>
@@ -314,7 +397,7 @@ const ContractStatsSection = () => {
           </Card>
         </Grid>
 
-      
+
 
         <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
@@ -358,13 +441,13 @@ const ContractStatsSection = () => {
           <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <CheckCircleIcon sx={{ color: 'success.main', mr: 1, fontSize: '1.5rem' }} />
+                <CheckCircleIcon sx={{ color: statsData.userStatus ? "error.main" : 'success.main', mr: 1, fontSize: '1.5rem' }} />
                 <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
                   Contract Status
                 </Typography>
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'success.main', fontSize: '1.25rem' }}>
-                Active
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: statsData.userStatus ? "error.main" : 'success.main', fontSize: '1.25rem' }}>
+                {statsData.userStatus}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
                 Status
@@ -391,6 +474,24 @@ const ContractStatsSection = () => {
             </CardContent>
           </Card>
         </Grid>
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <PoolIcon sx={{ color: 'secondary.main', mr: 1, fontSize: '1.5rem' }} />
+                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+                  Liquidity Pool Fund
+                </Typography>
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'secondary.main', fontSize: '1.25rem' }}>
+                ${formatDWC(statsData?.liquidityPoolFundUSDT)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                USDT
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
 
         {/* <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
@@ -410,6 +511,68 @@ const ContractStatsSection = () => {
             </CardContent>
           </Card>
         </Grid> */}
+
+        <Box
+          sx={{
+            p: 3,
+            borderRadius: 2,
+            backgroundColor: "background.paper",
+            boxShadow: 2,
+            width: "100%", // full width inside grid
+          }}
+        >
+          {/* Header with left + right text */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 1.5,
+            }}
+          >
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              Earning Limit: {statsData?.user?.rank < 6 ? statsData?.totalDeposit * 3 || 0 : statsData?.totalDeposit * 4 || 0}
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+              Remaining Limit : {statsData?.maxPayout || 0}
+            </Typography>
+          </Box>
+
+          {/* Progress Bar */}
+          {
+            (() => {
+              const earningLimit =
+                statsData?.user?.rank < 6
+                  ? (statsData?.totalDeposit || 0) * 3
+                  : (statsData?.totalDeposit || 0) * 4;
+
+              const usedLimit = earningLimit - (statsData?.maxPayout || 0);
+              console.log("🚀 ~ statsData?.maxPayout:", statsData?.maxPayout)
+
+              const progress =
+                earningLimit > 0 ? (usedLimit / earningLimit) * 100 : 0;
+
+
+              return (
+                <LinearProgress
+                  variant="determinate"
+                  value={progress > 0 ? progress : 1} // keep bar visible if 0
+                  sx={{
+                    height: 12,
+                    width: "100%",
+                    borderRadius: 6,
+                    backgroundColor: "grey.300",
+                    "& .MuiLinearProgress-bar": {
+                      borderRadius: 6,
+                    },
+                  }}
+                />
+              );
+            })()}
+
+
+        </Box>
+
       </Grid>
     </Card>
   );

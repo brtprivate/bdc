@@ -211,7 +211,7 @@ const RewardsPage = () => {
             <Button
               color="inherit"
               size="small"
-              onClick={() => {/* Add registration logic or redirect */}}
+              onClick={() => {/* Add registration logic or redirect */ }}
             >
               Register Now
             </Button>
@@ -263,35 +263,35 @@ const RewardsPage = () => {
             {[
               {
                 icon: <MonetizationOnIcon />,
-                title: 'Retention Bonus',
+                title: 'Stack Bonus',
                 value: formatCurrency(rewardsData.retentionBonus),
                 subtitle: 'Current reward balance (USDC)',
                 color: 'primary.main',
               },
               {
                 icon: <TrendingUpIcon />,
-                title: 'Released Retention Bonus',
+                title: 'Released Stack Bonus',
                 value: formatCurrency(rewardsData.releasedRetentionBonus),
                 subtitle: 'Total rewards minus withdrawals (USDC)',
                 color: 'success.main',
               },
               {
                 icon: <MonetizationOnIcon />,
-                title: 'Residual Bonus',
+                title: 'Team Withdrawal Bonus',
                 value: formatCurrency(rewardsData.residualBonus),
                 subtitle: 'Maturity income (USDC)',
                 color: 'warning.main',
               },
               {
                 icon: <TrendingUpIcon />,
-                title: 'Level Income',
+                title: 'Team Referral Bonus',
                 value: formatCurrency(rewardsData.levelIncome),
                 subtitle: 'Income from team levels (USDC)',
                 color: 'info.main',
               },
               {
                 icon: <MonetizationOnIcon />,
-                title: 'Royalty Income',
+                title: 'Royalty Bonus',
                 value: formatCurrency(rewardsData.royaltyIncome),
                 subtitle: 'Royalty earnings (USDC)',
                 color: 'secondary.main',
@@ -353,7 +353,7 @@ const RewardsPage = () => {
                       Current Status
                     </Typography>
                     <Typography variant="body1" sx={{ mb: 1, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      • Retention Bonus: {formatCurrency(rewardsData.retentionBonus)}
+                      • Stack Bonus: {formatCurrency(rewardsData.retentionBonus)}
                     </Typography>
                     <Typography variant="body1" sx={{ mb: 1, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                       • Available to Withdraw: {formatCurrency(rewardsData.availableToWithdraw)}
@@ -385,11 +385,11 @@ const RewardsPage = () => {
               </TableHead>
               <TableBody>
                 {[
-                  { type: 'Retention Bonus', amount: rewardsData.retentionBonus },
-                  { type: 'Released Retention Bonus', amount: rewardsData.releasedRetentionBonus },
-                  { type: 'Residual Bonus', amount: rewardsData.residualBonus },
-                  { type: 'Level Income', amount: rewardsData.levelIncome },
-                  { type: 'Royalty Income', amount: rewardsData.royaltyIncome },
+                  { type: 'Stack Bonus', amount: rewardsData.retentionBonus },
+                  { type: 'Released Stack Bonus', amount: rewardsData.releasedRetentionBonus },
+                  { type: 'Team Withdrawal Bonus', amount: rewardsData.residualBonus },
+                  { type: 'Team Referral Bonus', amount: rewardsData.levelIncome },
+                  { type: 'Royalty Bonus', amount: rewardsData.royaltyIncome },
                   { type: 'Total Income', amount: rewardsData.totalIncome },
                   { type: 'Total Withdrawn', amount: rewardsData.totalWithdraw },
                   { type: 'Available to Withdraw', amount: rewardsData.availableToWithdraw },

@@ -50,6 +50,18 @@ const MyTeam = () => {
     levels: [],
   });
 
+  const getRankLabel = (rank) => {
+    switch (Number(rank)) {
+      case 0: return 'Holder';
+      case 1: return 'Expert';
+      case 2: return 'Star';
+      case 3: return 'Two Star';
+      case 4: return 'Three Star';
+      case 5: return 'Five Star';
+      default: return 'Holder';
+    }
+  };
+
   const fetchTeamData = async () => {
     if (!wallet.isConnected || !wallet.account) {
       setError('Wallet not connected. Please connect your wallet.');
@@ -136,7 +148,7 @@ const MyTeam = () => {
         directBusiness: parseFloat(formatUnits(userInfo.directBusiness || 0n, 18)) || 0,
         majorTeam: Number(teamCount.maxTeam) || 0,
         minorTeam: Number(teamCount.otherTeam) || 0,
-        userRank: currentUserRank,
+        userRank: getRankLabel(currentUserRank),
         levelIncome: parseFloat(formatUnits(userInfo.levelincome || 0n, 18)) || 0,
         royaltyIncome: parseFloat(formatUnits(userInfo.royaltyincome || 0n, 18)) || 0,
         totalTeam: Number(userInfo.teamCount) || 0,
@@ -256,7 +268,7 @@ const MyTeam = () => {
             <Button
               color="inherit"
               size="small"
-              onClick={() => {/* Add registration logic or redirect */}}
+              onClick={() => {/* Add registration logic or redirect */ }}
             >
               Register Now
             </Button>
@@ -345,14 +357,14 @@ const MyTeam = () => {
                 },
                 {
                   icon: <TrendingUpIcon />,
-                  title: 'Level Income',
+                  title: 'Team Referral Bonus',
                   value: formatCurrency(teamData.levelIncome),
                   subtitle: 'Income from team levels',
                   color: 'primary.main',
                 },
                 {
                   icon: <AccountBalanceWalletIcon />,
-                  title: 'Royalty Income',
+                  title: 'Royalty Bonus',
                   value: formatCurrency(teamData.royaltyIncome),
                   subtitle: 'Royalty earnings from team',
                   color: 'secondary.main',

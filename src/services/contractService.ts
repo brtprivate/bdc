@@ -1,20 +1,604 @@
-import { readContract, writeContract, estimateGas, waitForTransactionReceipt } from "@wagmi/core";
-import { config } from "../config/web3modal";
-import { bscTestnet } from "wagmi/chains";
+import {
+  estimateGas,
+  readContract,
+  waitForTransactionReceipt,
+  writeContract,
+} from "@wagmi/core";
 import type { Address } from "viem";
-import { parseEther, formatEther, parseUnits, formatUnits, decodeErrorResult } from "viem";
-import { USDC_CONTRACT_ADDRESS, USDC_ABI, usdcContractInteractions } from './approvalservice';
+import {
+  decodeErrorResult,
+  formatEther,
+  formatUnits,
+  parseEther,
+  parseUnits,
+} from "viem";
+import { bscTestnet } from "wagmi/chains";
+import { config } from "../config/web3modal";
+import {
+  USDC_ABI,
+  USDC_CONTRACT_ADDRESS,
+  usdcContractInteractions,
+} from "./approvalservice";
 
 // Export USDC_ABI for use in other files
 export { USDC_ABI };
 // Contract configuration - BSC Testnet
-export const DWC_CONTRACT_ADDRESS = "0x5A615edDa19368a33aE90cc5eFA47D4bdB4A653b" as Address;
+export const DWC_CONTRACT_ADDRESS =
+  "0x5A615edDa19368a33aE90cc5eFA47D4bdB4A653b" as Address;
 export const TESTNET_CHAIN_ID = 97;
 
-
 // DWC Contract ABI (as provided)
-export const DWC_ABI=
-[{"inputs":[{"internalType":"address","name":"_daiAddr","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"_owner","type":"address"},{"indexed":true,"internalType":"address","name":"_spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"_value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"addr","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"token","type":"uint256"}],"name":"Deposit","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":true,"internalType":"address","name":"referrer","type":"address"},{"indexed":true,"internalType":"uint256","name":"userId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"referrerId","type":"uint256"}],"name":"Registration","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"token","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Swap","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"},{"indexed":false,"internalType":"uint8","name":"level","type":"uint8"},{"indexed":false,"internalType":"uint8","name":"Type","type":"uint8"}],"name":"Transaction","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"_from","type":"address"},{"indexed":true,"internalType":"address","name":"_to","type":"address"},{"indexed":false,"internalType":"uint256","name":"_value","type":"uint256"}],"name":"Transfer","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Withdraw","type":"event"},{"inputs":[],"name":"Iswithdraw","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"_burnToken","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_daiamount","type":"uint256"}],"name":"_daiToTokens","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_tokenAmount","type":"uint256"}],"name":"_tokensTodai","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_spender","type":"address"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"bdctokenPool","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"address","name":"account","type":"address"}],"name":"burn","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"coinRate","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"communityHoldingFund","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"creator","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"dai","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"dayRewardPercents","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"deposit","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"depositbdc","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"extraPool","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"feewallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_user","type":"address"},{"internalType":"uint256","name":"_rank","type":"uint256"}],"name":"getActiveCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"getOrderLength","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"getTeamCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"id1","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"user","type":"address"}],"name":"isUserExists","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"lastUserId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"liquidityPool","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"liquidityPool_daiAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"liquidityPool_tokenAmount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"map_ranks","outputs":[{"internalType":"uint256","name":"id","type":"uint256"},{"internalType":"uint256","name":"activedirect","type":"uint256"},{"internalType":"uint256","name":"activeteam","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"maxPayoutOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"userAddress","type":"address"},{"internalType":"address","name":"referrerAddress","type":"address"}],"name":"migrate","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"orderInfos","outputs":[{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"uint256","name":"holdingbonus","type":"uint256"},{"internalType":"uint256","name":"deposit_time","type":"uint256"},{"internalType":"uint256","name":"reward_time","type":"uint256"},{"internalType":"bool","name":"isactive","type":"bool"},{"internalType":"bool","name":"isdai","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"priceimpactwallet","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"referrerAddress","type":"address"}],"name":"register","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"rewardindex","type":"uint256"}],"name":"rewardWithdraw","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_tokenAmount","type":"uint256"}],"name":"tokenSwap","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"_to","type":"address"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_from","type":"address"},{"internalType":"address","name":"_to","type":"address"},{"internalType":"uint256","name":"_value","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"success","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_creator","type":"address"}],"name":"update","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_dayRewardPercents","type":"uint256"}],"name":"updateContractROI","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bool","name":"_iswithdraw","type":"bool"}],"name":"updateContractWithdrawal","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_user","type":"address"},{"internalType":"uint256","name":"_dayRewardPercents","type":"uint256"}],"name":"updateUserROI","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_user","type":"address"},{"internalType":"bool","name":"_iswithdraw","type":"bool"}],"name":"updateUserWithdrawal","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"userranks","outputs":[{"internalType":"uint256","name":"rank","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"users","outputs":[{"internalType":"uint256","name":"id","type":"uint256"},{"internalType":"address","name":"referrer","type":"address"},{"internalType":"uint256","name":"partnersCount","type":"uint256"},{"internalType":"uint256","name":"teamCount","type":"uint256"},{"internalType":"uint256","name":"totalDeposit","type":"uint256"},{"internalType":"uint256","name":"lastDeposit","type":"uint256"},{"internalType":"uint256","name":"directBusiness","type":"uint256"},{"internalType":"uint256","name":"reward","type":"uint256"},{"internalType":"uint256","name":"levelincome","type":"uint256"},{"internalType":"uint256","name":"roraltyincome","type":"uint256"},{"internalType":"uint256","name":"maturityincome","type":"uint256"},{"internalType":"uint256","name":"totalreward","type":"uint256"},{"internalType":"uint256","name":"totalwithdraw","type":"uint256"},{"internalType":"uint256","name":"dayRewardPercents","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"userscapping","outputs":[{"internalType":"uint256","name":"totalCapping","type":"uint256"},{"internalType":"uint256","name":"useCapping","type":"uint256"},{"internalType":"bool","name":"Iswithdraw","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"withdrawfee","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"}]
+export const DWC_ABI = [
+  {
+    inputs: [{ internalType: "address", name: "_daiAddr", type: "address" }],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "_owner",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "_spender",
+        type: "address",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_value",
+        type: "uint256",
+      },
+    ],
+    name: "Approval",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "addr", type: "address" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "amount",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "token",
+        type: "uint256",
+      },
+    ],
+    name: "Deposit",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      {
+        indexed: true,
+        internalType: "address",
+        name: "referrer",
+        type: "address",
+      },
+      {
+        indexed: true,
+        internalType: "uint256",
+        name: "userId",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "referrerId",
+        type: "uint256",
+      },
+    ],
+    name: "Registration",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "token",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "value",
+        type: "uint256",
+      },
+    ],
+    name: "Swap",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      { indexed: true, internalType: "address", name: "from", type: "address" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "value",
+        type: "uint256",
+      },
+      { indexed: false, internalType: "uint8", name: "level", type: "uint8" },
+      { indexed: false, internalType: "uint8", name: "Type", type: "uint8" },
+    ],
+    name: "Transaction",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "address",
+        name: "_from",
+        type: "address",
+      },
+      { indexed: true, internalType: "address", name: "_to", type: "address" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "_value",
+        type: "uint256",
+      },
+    ],
+    name: "Transfer",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "user", type: "address" },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "value",
+        type: "uint256",
+      },
+    ],
+    name: "Withdraw",
+    type: "event",
+  },
+  {
+    inputs: [],
+    name: "Iswithdraw",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "_burnToken",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "_daiamount", type: "uint256" }],
+    name: "_daiToTokens",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "_tokenAmount", type: "uint256" },
+    ],
+    name: "_tokensTodai",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "", type: "address" },
+      { internalType: "address", name: "", type: "address" },
+    ],
+    name: "allowance",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_spender", type: "address" },
+      { internalType: "uint256", name: "_value", type: "uint256" },
+    ],
+    name: "approve",
+    outputs: [{ internalType: "bool", name: "success", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "", type: "address" }],
+    name: "balanceOf",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "bdctokenPool",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "amount", type: "uint256" },
+      { internalType: "address", name: "account", type: "address" },
+    ],
+    name: "burn",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "coinRate",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "communityHoldingFund",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "creator",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "dai",
+    outputs: [{ internalType: "contract IERC20", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "dayRewardPercents",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "decimals",
+    outputs: [{ internalType: "uint8", name: "", type: "uint8" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "_amount", type: "uint256" }],
+    name: "deposit",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "_amount", type: "uint256" }],
+    name: "depositbdc",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "extraPool",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "feewallet",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_user", type: "address" },
+      { internalType: "uint256", name: "_rank", type: "uint256" },
+    ],
+    name: "getActiveCount",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_user", type: "address" }],
+    name: "getOrderLength",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_user", type: "address" }],
+    name: "getTeamCount",
+    outputs: [
+      { internalType: "uint256", name: "", type: "uint256" },
+      { internalType: "uint256", name: "", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "id1",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "user", type: "address" }],
+    name: "isUserExists",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "lastUserId",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "liquidityPool",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "liquidityPool_daiAmount",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "liquidityPool_tokenAmount",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    name: "map_ranks",
+    outputs: [
+      { internalType: "uint256", name: "id", type: "uint256" },
+      { internalType: "uint256", name: "activedirect", type: "uint256" },
+      { internalType: "uint256", name: "activeteam", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_user", type: "address" }],
+    name: "maxPayoutOf",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "userAddress", type: "address" },
+      { internalType: "address", name: "referrerAddress", type: "address" },
+    ],
+    name: "migrate",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "name",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "", type: "address" },
+      { internalType: "uint256", name: "", type: "uint256" },
+    ],
+    name: "orderInfos",
+    outputs: [
+      { internalType: "uint256", name: "amount", type: "uint256" },
+      { internalType: "uint256", name: "holdingbonus", type: "uint256" },
+      { internalType: "uint256", name: "deposit_time", type: "uint256" },
+      { internalType: "uint256", name: "reward_time", type: "uint256" },
+      { internalType: "bool", name: "isactive", type: "bool" },
+      { internalType: "bool", name: "isdai", type: "bool" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "priceimpactwallet",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "referrerAddress", type: "address" },
+    ],
+    name: "register",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "rewardindex", type: "uint256" }],
+    name: "rewardWithdraw",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "symbol",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "_tokenAmount", type: "uint256" },
+    ],
+    name: "tokenSwap",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "totalSupply",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_to", type: "address" },
+      { internalType: "uint256", name: "_value", type: "uint256" },
+    ],
+    name: "transfer",
+    outputs: [{ internalType: "bool", name: "success", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_from", type: "address" },
+      { internalType: "address", name: "_to", type: "address" },
+      { internalType: "uint256", name: "_value", type: "uint256" },
+    ],
+    name: "transferFrom",
+    outputs: [{ internalType: "bool", name: "success", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "_creator", type: "address" }],
+    name: "update",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "_dayRewardPercents", type: "uint256" },
+    ],
+    name: "updateContractROI",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "bool", name: "_iswithdraw", type: "bool" }],
+    name: "updateContractWithdrawal",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_user", type: "address" },
+      { internalType: "uint256", name: "_dayRewardPercents", type: "uint256" },
+    ],
+    name: "updateUserROI",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_user", type: "address" },
+      { internalType: "bool", name: "_iswithdraw", type: "bool" },
+    ],
+    name: "updateUserWithdrawal",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "", type: "address" }],
+    name: "userranks",
+    outputs: [{ internalType: "uint256", name: "rank", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "", type: "address" }],
+    name: "users",
+    outputs: [
+      { internalType: "uint256", name: "id", type: "uint256" },
+      { internalType: "address", name: "referrer", type: "address" },
+      { internalType: "uint256", name: "partnersCount", type: "uint256" },
+      { internalType: "uint256", name: "teamCount", type: "uint256" },
+      { internalType: "uint256", name: "totalDeposit", type: "uint256" },
+      { internalType: "uint256", name: "lastDeposit", type: "uint256" },
+      { internalType: "uint256", name: "directBusiness", type: "uint256" },
+      { internalType: "uint256", name: "reward", type: "uint256" },
+      { internalType: "uint256", name: "levelincome", type: "uint256" },
+      { internalType: "uint256", name: "roraltyincome", type: "uint256" },
+      { internalType: "uint256", name: "maturityincome", type: "uint256" },
+      { internalType: "uint256", name: "totalreward", type: "uint256" },
+      { internalType: "uint256", name: "totalwithdraw", type: "uint256" },
+      { internalType: "uint256", name: "dayRewardPercents", type: "uint256" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "address", name: "", type: "address" }],
+    name: "userscapping",
+    outputs: [
+      { internalType: "uint256", name: "totalCapping", type: "uint256" },
+      { internalType: "uint256", name: "useCapping", type: "uint256" },
+      { internalType: "bool", name: "Iswithdraw", type: "bool" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "withdrawfee",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+];
 // Constants for deposit limits
 const MIN_DEPOSIT = parseEther("50");
 const MAX_DEPOSIT = parseEther("10000");
@@ -92,16 +676,46 @@ interface DWCContractInteractions {
   deposit: (amount: string, userAddress: Address) => Promise<`0x${string}`>;
   depositDWC: (amount: string, account: Address) => Promise<`0x${string}`>;
   tokenSwap: (tokenAmount: bigint, account: Address) => Promise<`0x${string}`>;
-  rewardWithdraw: (rewardIndex: bigint, account: Address) => Promise<`0x${string}`>;
+  rewardWithdraw: (
+    rewardIndex: bigint,
+    account: Address
+  ) => Promise<`0x${string}`>;
   burn: (amount: bigint, account: Address) => Promise<`0x${string}`>;
-  transfer: (to: Address, value: bigint, account: Address) => Promise<`0x${string}`>;
-  transferFrom: (from: Address, to: Address, value: bigint, account: Address) => Promise<`0x${string}`>;
-  migrate: (userAddress: Address, referrerAddress: Address, account: Address) => Promise<`0x${string}`>;
+  transfer: (
+    to: Address,
+    value: bigint,
+    account: Address
+  ) => Promise<`0x${string}`>;
+  transferFrom: (
+    from: Address,
+    to: Address,
+    value: bigint,
+    account: Address
+  ) => Promise<`0x${string}`>;
+  migrate: (
+    userAddress: Address,
+    referrerAddress: Address,
+    account: Address
+  ) => Promise<`0x${string}`>;
   update: (creator: Address, account: Address) => Promise<`0x${string}`>;
-  updateContractROI: (dayRewardPercents: bigint, account: Address) => Promise<`0x${string}`>;
-  updateContractWithdrawal: (iswithdraw: boolean, account: Address) => Promise<`0x${string}`>;
-  updateUserROI: (user: Address, dayRewardPercents: bigint, account: Address) => Promise<`0x${string}`>;
-  updateUserWithdrawal: (user: Address, iswithdraw: boolean, account: Address) => Promise<`0x${string}`>;
+  updateContractROI: (
+    dayRewardPercents: bigint,
+    account: Address
+  ) => Promise<`0x${string}`>;
+  updateContractWithdrawal: (
+    iswithdraw: boolean,
+    account: Address
+  ) => Promise<`0x${string}`>;
+  updateUserROI: (
+    user: Address,
+    dayRewardPercents: bigint,
+    account: Address
+  ) => Promise<`0x${string}`>;
+  updateUserWithdrawal: (
+    user: Address,
+    iswithdraw: boolean,
+    account: Address
+  ) => Promise<`0x${string}`>;
   getUserInfo: (user: Address) => Promise<UserInfo>;
   getUserRank: (user: Address) => Promise<UserRank>;
   getUserCapping: (user: Address) => Promise<UserCapping>;
@@ -146,7 +760,9 @@ interface DWCContractInteractions {
 export const dwcContractInteractions: DWCContractInteractions = {
   async approveUSDC(amount: bigint, account: Address): Promise<`0x${string}`> {
     try {
-      console.log(`Approving ${formatEther(amount)} USDC for ${DWC_CONTRACT_ADDRESS}`);
+      console.log(
+        `Approving ${formatEther(amount)} USDC for ${DWC_CONTRACT_ADDRESS}`
+      );
       const gasEstimate = await estimateGas(config, {
         abi: USDC_ABI,
         address: USDC_CONTRACT_ADDRESS,
@@ -164,17 +780,24 @@ export const dwcContractInteractions: DWCContractInteractions = {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
       console.error(`Error approving USDC: ${error.message || error}`);
-      throw new Error(`Failed to approve USDC: ${error.message || "Unknown error"}`);
+      throw new Error(
+        `Failed to approve USDC: ${error.message || "Unknown error"}`
+      );
     }
   },
 
   async approveDWC(amount: bigint, account: Address): Promise<`0x${string}`> {
     try {
-      console.log(`Approving ${formatEther(amount)} DWC for ${DWC_CONTRACT_ADDRESS}`);
+      console.log(
+        `Approving ${formatEther(amount)} DWC for ${DWC_CONTRACT_ADDRESS}`
+      );
       const gasEstimate = await estimateGas(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
@@ -192,11 +815,16 @@ export const dwcContractInteractions: DWCContractInteractions = {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
       console.error(`Error approving DWC: ${error.message || error}`);
-      throw new Error(`Failed to approve DWC: ${error.message || "Unknown error"}`);
+      throw new Error(
+        `Failed to approve DWC: ${error.message || "Unknown error"}`
+      );
     }
   },
 
@@ -215,8 +843,12 @@ export const dwcContractInteractions: DWCContractInteractions = {
       })) as bigint;
 
       const formattedBalance = formatEther(balance);
-      console.log(`✅ USDC balance for ${account}: ${formattedBalance} USDC (raw: ${balance})`);
-      console.log(`📊 Contract call successful - balanceOf(${account}) returned: ${balance}`);
+      console.log(
+        `✅ USDC balance for ${account}: ${formattedBalance} USDC (raw: ${balance})`
+      );
+      console.log(
+        `📊 Contract call successful - balanceOf(${account}) returned: ${balance}`
+      );
 
       return balance;
     } catch (error: any) {
@@ -227,9 +859,11 @@ export const dwcContractInteractions: DWCContractInteractions = {
         data: error.data,
         contractAddress: USDC_CONTRACT_ADDRESS,
         chainId: TESTNET_CHAIN_ID,
-        account: account
+        account: account,
       });
-      throw new Error(`Failed to fetch USDC balance: ${error.message || "Unknown error"}`);
+      throw new Error(
+        `Failed to fetch USDC balance: ${error.message || "Unknown error"}`
+      );
     }
   },
 
@@ -248,8 +882,12 @@ export const dwcContractInteractions: DWCContractInteractions = {
       })) as bigint;
 
       const formattedBalance = formatEther(balance);
-      console.log(`✅ DWC balance for ${account}: ${formattedBalance} DWC (raw: ${balance})`);
-      console.log(`📊 Contract call successful - balanceOf(${account}) returned: ${balance}`);
+      console.log(
+        `✅ DWC balance for ${account}: ${formattedBalance} DWC (raw: ${balance})`
+      );
+      console.log(
+        `📊 Contract call successful - balanceOf(${account}) returned: ${balance}`
+      );
 
       return balance;
     } catch (error: any) {
@@ -260,9 +898,11 @@ export const dwcContractInteractions: DWCContractInteractions = {
         data: error.data,
         contractAddress: DWC_CONTRACT_ADDRESS,
         chainId: TESTNET_CHAIN_ID,
-        account: account
+        account: account,
       });
-      throw new Error(`Failed to fetch DWC balance: ${error.message || "Unknown error"}`);
+      throw new Error(
+        `Failed to fetch DWC balance: ${error.message || "Unknown error"}`
+      );
     }
   },
 
@@ -270,7 +910,9 @@ export const dwcContractInteractions: DWCContractInteractions = {
     try {
       console.log(`Registering user ${account} with referrer: ${referrer}`);
       if (referrer === "0x0000000000000000000000000000000000000000") {
-        throw new Error("Invalid referrer address: zero address is not allowed");
+        throw new Error(
+          "Invalid referrer address: zero address is not allowed"
+        );
       }
       const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
       if (!ethAddressRegex.test(referrer)) {
@@ -284,18 +926,18 @@ export const dwcContractInteractions: DWCContractInteractions = {
       if (!isReferrerExists) {
         throw new Error("Referrer does not exist");
       }
-    const gasEstimate = await estimateGas(config, {
-      abi: DWC_ABI,
-      address: DWC_CONTRACT_ADDRESS,
-      functionName: "register",
-      args: [referrer],
-      chain: bscTestnet,
-      account,
-    });
-    // Increase gas limit by 200% to handle reentrancy sentry and set minimum
-    const gasLimit = (gasEstimate * 200n) / 100n;
-    const minGasLimit = 150000n;
-    const finalGasLimit = gasLimit > minGasLimit ? gasLimit : minGasLimit;
+      const gasEstimate = await estimateGas(config, {
+        abi: DWC_ABI,
+        address: DWC_CONTRACT_ADDRESS,
+        functionName: "register",
+        args: [referrer],
+        chain: bscTestnet,
+        account,
+      });
+      // Increase gas limit by 200% to handle reentrancy sentry and set minimum
+      const gasLimit = (gasEstimate * 200n) / 100n;
+      const minGasLimit = 150000n;
+      const finalGasLimit = gasLimit > minGasLimit ? gasLimit : minGasLimit;
       const txHash = await writeContract(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
@@ -305,7 +947,10 @@ export const dwcContractInteractions: DWCContractInteractions = {
         account,
         gas: finalGasLimit,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
       console.error(`Error registering user: ${error.message || error}`);
@@ -313,100 +958,105 @@ export const dwcContractInteractions: DWCContractInteractions = {
     }
   },
 
-async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
-  try {
-    console.log(`Depositing ${amount} USDC for ${userAddress}`);
+  async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
+    try {
+      console.log(`Depositing ${amount} USDC for ${userAddress}`);
 
-    // Get USDC decimals
-    const decimals = await readContract(config, {
-      abi: USDC_ABI,
-      address: USDC_CONTRACT_ADDRESS,
-      functionName: "decimals",
-      chainId: TESTNET_CHAIN_ID,
-    }) as number;
-    console.log("USDC Decimals:", decimals);
+      // Get USDC decimals
+      const decimals = (await readContract(config, {
+        abi: USDC_ABI,
+        address: USDC_CONTRACT_ADDRESS,
+        functionName: "decimals",
+        chainId: TESTNET_CHAIN_ID,
+      })) as number;
+      console.log("USDC Decimals:", decimals);
 
-    // Convert user-friendly amount → wei
-    const amountInWei = parseUnits(amount, decimals);
-    console.log(`Converted Amount: ${amountInWei.toString()} wei`);
+      // Convert user-friendly amount → wei
+      const amountInWei = parseUnits(amount, decimals);
+      console.log(`Converted Amount: ${amountInWei.toString()} wei`);
 
-    // ✅ Check if user exists
-    const isUserExists = await this.isUserExists(userAddress);
-    if (!isUserExists) {
-      throw new Error("User is not registered");
-    }
+      // ✅ Check if user exists
+      const isUserExists = await this.isUserExists(userAddress);
+      if (!isUserExists) {
+        throw new Error("User is not registered");
+      }
 
-    // ✅ User info validation
-    const userInfo = await this.getUserInfo(userAddress);
-    if (amountInWei < userInfo.lastDeposit) {
-      throw new Error(
-        `Deposit amount must be >= last deposit: ${formatUnits(
-          userInfo.lastDeposit,
-          decimals
-        )} USDC`
-      );
-    }
+      // ✅ User info validation
+      const userInfo = await this.getUserInfo(userAddress);
+      if (amountInWei < userInfo.lastDeposit) {
+        throw new Error(
+          `Deposit amount must be >= last deposit: ${formatUnits(
+            userInfo.lastDeposit,
+            decimals
+          )} USDT`
+        );
+      }
 
-    // ✅ Balance check
-    const balance = await this.getUSDCBalance(userAddress);
-    if (balance < amountInWei) {
-      throw new Error(
-        `Insufficient balance. Available: ${formatUnits(
-          balance,
-          decimals
-        )} USDC, Required: ${amount} USDC`
-      );
-    }
+      // ✅ Balance check
+      const balance = await this.getUSDCBalance(userAddress);
+      if (balance < amountInWei) {
+        throw new Error(
+          `Insufficient balance. Available: ${formatUnits(
+            balance,
+            decimals
+          )} USDT, Required: ${amount} USDT`
+        );
+      }
 
-    // ✅ Allowance check
-    const allowance = (await readContract(config, {
-      abi: USDC_ABI,
-      address: USDC_CONTRACT_ADDRESS,
-      functionName: "allowance",
-      args: [userAddress, DWC_CONTRACT_ADDRESS],
-      chainId: TESTNET_CHAIN_ID,
-    })) as bigint;
+      // ✅ Allowance check
+      const allowance = (await readContract(config, {
+        abi: USDC_ABI,
+        address: USDC_CONTRACT_ADDRESS,
+        functionName: "allowance",
+        args: [userAddress, DWC_CONTRACT_ADDRESS],
+        chainId: TESTNET_CHAIN_ID,
+      })) as bigint;
 
-    console.log("Allowance:", formatUnits(allowance, decimals));
-    if (allowance < amountInWei) {
-      console.log(`Approving ${amount} USDC for DWC contract`);
-      const approvalTx = await this.approveUSDC(amountInWei, userAddress);
-      await waitForTransactionReceipt(config, { hash: approvalTx, chainId: TESTNET_CHAIN_ID });
-    }
+      console.log("Allowance:", formatUnits(allowance, decimals));
+      if (allowance < amountInWei) {
+        console.log(`Approving ${amount} USDT for DWC contract`);
+        const approvalTx = await this.approveUSDC(amountInWei, userAddress);
+        await waitForTransactionReceipt(config, {
+          hash: approvalTx,
+          chainId: TESTNET_CHAIN_ID,
+        });
+      }
 
-    // ✅ Execute transaction
-    console.log("Executing deposit transaction...");
-    const txHash = await writeContract(config, {
-      abi: DWC_ABI,
-      address: DWC_CONTRACT_ADDRESS,
-      functionName: "deposit",
-      args: [amountInWei],
-      chain: bscTestnet,
-      account: userAddress,
-      // gas: BkigInt(500000), // Optional manual gas limit
-    });
-
-    console.log(`Deposit transaction successful: ${txHash}`);
-    return txHash as `0x${string}`;
-  } catch (error: any) {
-    console.error("Error depositing USDC:", error);
-
-    // ✅ Decode contract error if available
-    if (error.cause?.data) {
-      const decodedError = decodeErrorResult({
+      // ✅ Execute transaction
+      console.log("Executing deposit transaction...");
+      const txHash = await writeContract(config, {
         abi: DWC_ABI,
-        data: error.cause.data,
+        address: DWC_CONTRACT_ADDRESS,
+        functionName: "deposit",
+        args: [amountInWei],
+        chain: bscTestnet,
+        account: userAddress,
+        // gas: BkigInt(500000), // Optional manual gas limit
       });
+
+      console.log(`Deposit transaction successful: ${txHash}`);
+      return txHash as `0x${string}`;
+    } catch (error: any) {
+      console.error("Error depositing USDC:", error);
+
+      // ✅ Decode contract error if available
+      if (error.cause?.data) {
+        const decodedError = decodeErrorResult({
+          abi: DWC_ABI,
+          data: error.cause.data,
+        });
+        throw new Error(
+          `Deposit failed: ${decodedError.errorName || "Unknown error"} - ${
+            decodedError.args?.join(", ") || ""
+          }`
+        );
+      }
+
       throw new Error(
-        `Deposit failed: ${
-          decodedError.errorName || "Unknown error"
-        } - ${decodedError.args?.join(", ") || ""}`
+        `Failed to deposit USDT: ${error.message || "Unknown error"}`
       );
     }
-
-    throw new Error(`Failed to deposit USDC: ${error.message || "Unknown error"}`);
-  }
-},
+  },
 
   async depositDWC(amount: string, account: Address): Promise<`0x${string}`> {
     try {
@@ -419,7 +1069,11 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       })) as number;
       const parsedAmount = parseUnits(amount, decimals);
       if (parsedAmount < MIN_DEPOSIT || parsedAmount > MAX_DEPOSIT) {
-        throw new Error(`Deposit amount must be between ${formatEther(MIN_DEPOSIT)} and ${formatEther(MAX_DEPOSIT)} DWC`);
+        throw new Error(
+          `Deposit amount must be between ${formatEther(
+            MIN_DEPOSIT
+          )} and ${formatEther(MAX_DEPOSIT)} DWC`
+        );
       }
       const isUserExists = await this.isUserExists(account);
       if (!isUserExists) {
@@ -427,11 +1081,19 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       }
       const userInfo = await this.getUserInfo(account);
       if (parsedAmount < userInfo.lastDeposit) {
-        throw new Error(`Deposit amount must be greater than or equal to last deposit: ${formatEther(userInfo.lastDeposit)} DWC`);
+        throw new Error(
+          `Deposit amount must be greater than or equal to last deposit: ${formatEther(
+            userInfo.lastDeposit
+          )} DWC`
+        );
       }
       const balance = await this.getDWCBalance(account);
       if (balance < parsedAmount) {
-        throw new Error(`Insufficient DWC balance. Available: ${formatEther(balance)} DWC, Required: ${amount} DWC`);
+        throw new Error(
+          `Insufficient DWC balance. Available: ${formatEther(
+            balance
+          )} DWC, Required: ${amount} DWC`
+        );
       }
       const allowance = (await readContract(config, {
         abi: DWC_ABI,
@@ -443,7 +1105,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       if (allowance < parsedAmount) {
         console.log(`Approving ${amount} DWC for DWC contract`);
         const approvalTx = await this.approveDWC(parsedAmount, account);
-        await waitForTransactionReceipt(config, { hash: approvalTx, chainId: TESTNET_CHAIN_ID });
+        await waitForTransactionReceipt(config, {
+          hash: approvalTx,
+          chainId: TESTNET_CHAIN_ID,
+        });
       }
       const gasEstimate = await estimateGas(config, {
         abi: DWC_ABI,
@@ -462,7 +1127,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
       console.error(`Error depositing DWC: ${error.message || error}`);
@@ -470,12 +1138,19 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
     }
   },
 
-  async tokenSwap(tokenAmount: bigint, account: Address): Promise<`0x${string}`> {
+  async tokenSwap(
+    tokenAmount: bigint,
+    account: Address
+  ): Promise<`0x${string}`> {
     try {
       console.log(`Swapping ${formatEther(tokenAmount)} DWC for USDC`);
       const balance = await this.getDWCBalance(account);
       if (balance < tokenAmount) {
-        throw new Error(`Insufficient DWC balance. Available: ${formatEther(balance)} DWC, Required: ${formatEther(tokenAmount)} DWC`);
+        throw new Error(
+          `Insufficient DWC balance. Available: ${formatEther(
+            balance
+          )} DWC, Required: ${formatEther(tokenAmount)} DWC`
+        );
       }
       const gasEstimate = await estimateGas(config, {
         abi: DWC_ABI,
@@ -494,7 +1169,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
       console.error(`Error swapping tokens: ${error.message || error}`);
@@ -502,7 +1180,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
     }
   },
 
-  async rewardWithdraw(rewardIndex: bigint, account: Address): Promise<`0x${string}`> {
+  async rewardWithdraw(
+    rewardIndex: bigint,
+    account: Address
+  ): Promise<`0x${string}`> {
     try {
       console.log(`Withdrawing reward for index ${rewardIndex} for ${account}`);
       const isWithdrawActive = await this.isWithdrawActive();
@@ -538,7 +1219,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         account,
         // gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
       console.error(`Error withdrawing reward: ${error.message || error}`);
@@ -570,7 +1254,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
       console.error(`Error burning tokens: ${error.message || error}`);
@@ -578,7 +1265,11 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
     }
   },
 
-  async transfer(to: Address, value: bigint, account: Address): Promise<`0x${string}`> {
+  async transfer(
+    to: Address,
+    value: bigint,
+    account: Address
+  ): Promise<`0x${string}`> {
     try {
       console.log(`Transferring ${formatEther(value)} DWC to ${to}`);
       const restrictedAddresses = [
@@ -591,7 +1282,11 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       }
       const balance = await dwcContractInteractions.getDWCBalance(account);
       if (balance < value) {
-        throw new Error(`Insufficient balance. Available: ${formatEther(balance)} DWC, Required: ${formatEther(value)} DWC`);
+        throw new Error(
+          `Insufficient balance. Available: ${formatEther(
+            balance
+          )} DWC, Required: ${formatEther(value)} DWC`
+        );
       }
       const gasEstimate = await estimateGas(config, {
         abi: DWC_ABI,
@@ -610,7 +1305,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
       console.error(`Error transferring tokens: ${error.message || error}`);
@@ -618,12 +1316,23 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
     }
   },
 
-  async transferFrom(from: Address, to: Address, value: bigint, account: Address): Promise<`0x${string}`> {
+  async transferFrom(
+    from: Address,
+    to: Address,
+    value: bigint,
+    account: Address
+  ): Promise<`0x${string}`> {
     try {
-      console.log(`Transferring ${formatEther(value)} DWC from ${from} to ${to}`);
+      console.log(
+        `Transferring ${formatEther(value)} DWC from ${from} to ${to}`
+      );
       const allowance = await this.getAllowance(from, account);
       if (allowance < value) {
-        throw new Error(`Insufficient allowance. Approved: ${formatEther(allowance)} DWC, Required: ${formatEther(value)} DWC`);
+        throw new Error(
+          `Insufficient allowance. Approved: ${formatEther(
+            allowance
+          )} DWC, Required: ${formatEther(value)} DWC`
+        );
       }
       const gasEstimate = await estimateGas(config, {
         abi: DWC_ABI,
@@ -642,17 +1351,28 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
-      console.error(`Error transferring tokens from: ${error.message || error}`);
+      console.error(
+        `Error transferring tokens from: ${error.message || error}`
+      );
       throw error;
     }
   },
 
-  async migrate(userAddress: Address, referrerAddress: Address, account: Address): Promise<`0x${string}`> {
+  async migrate(
+    userAddress: Address,
+    referrerAddress: Address,
+    account: Address
+  ): Promise<`0x${string}`> {
     try {
-      console.log(`Migrating user ${userAddress} with referrer ${referrerAddress}`);
+      console.log(
+        `Migrating user ${userAddress} with referrer ${referrerAddress}`
+      );
       const creator = await this.getCreator();
       if (account !== creator) {
         throw new Error("Only creator can migrate users");
@@ -674,7 +1394,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
       console.error(`Error migrating user: ${error.message || error}`);
@@ -706,7 +1429,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
       console.error(`Error updating creator: ${error.message || error}`);
@@ -714,7 +1440,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
     }
   },
 
-  async updateContractROI(dayRewardPercents: bigint, account: Address): Promise<`0x${string}`> {
+  async updateContractROI(
+    dayRewardPercents: bigint,
+    account: Address
+  ): Promise<`0x${string}`> {
     try {
       console.log(`Updating contract ROI to ${dayRewardPercents}`);
       const owner = "0x078E9a7138610753BB4E76ae52384c03155EffEb" as Address;
@@ -738,7 +1467,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
       console.error(`Error updating contract ROI: ${error.message || error}`);
@@ -746,7 +1478,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
     }
   },
 
-  async updateContractWithdrawal(iswithdraw: boolean, account: Address): Promise<`0x${string}`> {
+  async updateContractWithdrawal(
+    iswithdraw: boolean,
+    account: Address
+  ): Promise<`0x${string}`> {
     try {
       console.log(`Updating contract withdrawal status to ${iswithdraw}`);
       const owner = "0x078E9a7138610753BB4E76ae52384c03155EffEb" as Address;
@@ -770,15 +1505,24 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
-      console.error(`Error updating contract withdrawal status: ${error.message || error}`);
+      console.error(
+        `Error updating contract withdrawal status: ${error.message || error}`
+      );
       throw error;
     }
   },
 
-  async updateUserROI(user: Address, dayRewardPercents: bigint, account: Address): Promise<`0x${string}`> {
+  async updateUserROI(
+    user: Address,
+    dayRewardPercents: bigint,
+    account: Address
+  ): Promise<`0x${string}`> {
     try {
       console.log(`Updating ROI for user ${user} to ${dayRewardPercents}`);
       const owner = "0x078E9a7138610753BB4E76ae52384c03155EffEb" as Address;
@@ -802,7 +1546,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
       console.error(`Error updating user ROI: ${error.message || error}`);
@@ -810,9 +1557,15 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
     }
   },
 
-  async updateUserWithdrawal(user: Address, iswithdraw: boolean, account: Address): Promise<`0x${string}`> {
+  async updateUserWithdrawal(
+    user: Address,
+    iswithdraw: boolean,
+    account: Address
+  ): Promise<`0x${string}`> {
     try {
-      console.log(`Updating withdrawal status for user ${user} to ${iswithdraw}`);
+      console.log(
+        `Updating withdrawal status for user ${user} to ${iswithdraw}`
+      );
       const owner = "0x078E9a7138610753BB4E76ae52384c03155EffEb" as Address;
       if (account !== owner) {
         throw new Error("Only owner can update user withdrawal status");
@@ -834,10 +1587,15 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         account,
         gas: gasEstimate,
       });
-      await waitForTransactionReceipt(config, { hash: txHash as `0x${string}`, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, {
+        hash: txHash as `0x${string}`,
+        chainId: TESTNET_CHAIN_ID,
+      });
       return txHash as `0x${string}`;
     } catch (error: any) {
-      console.error(`Error updating user withdrawal status: ${error.message || error}`);
+      console.error(
+        `Error updating user withdrawal status: ${error.message || error}`
+      );
       throw error;
     }
   },
@@ -908,14 +1666,21 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
 
   async getUserCapping(user: Address): Promise<UserCapping> {
     try {
-      const [totalCapping, useCapping, Iswithdraw] = (await readContract(config, {
-        abi: DWC_ABI,
-        address: DWC_CONTRACT_ADDRESS,
-        functionName: "userscapping",
-        args: [user],
-        chainId: TESTNET_CHAIN_ID,
-      })) as [bigint, bigint, boolean];
-      console.log(`User capping for ${user}:`, { totalCapping, useCapping, Iswithdraw });
+      const [totalCapping, useCapping, Iswithdraw] = (await readContract(
+        config,
+        {
+          abi: DWC_ABI,
+          address: DWC_CONTRACT_ADDRESS,
+          functionName: "userscapping",
+          args: [user],
+          chainId: TESTNET_CHAIN_ID,
+        }
+      )) as [bigint, bigint, boolean];
+      console.log(`User capping for ${user}:`, {
+        totalCapping,
+        useCapping,
+        Iswithdraw,
+      });
       return { totalCapping, useCapping, Iswithdraw };
     } catch (error: any) {
       console.error(`Error fetching user capping: ${error.message || error}`);
@@ -925,13 +1690,14 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
 
   async getOrderInfo(user: Address, index: bigint): Promise<OrderInfo> {
     try {
-      const [amount, holdingbonus, deposit_time, reward_time, isactive, isdai] = (await readContract(config, {
-        abi: DWC_ABI,
-        address: DWC_CONTRACT_ADDRESS,
-        functionName: "orderInfos",
-        args: [user, index],
-        chainId: TESTNET_CHAIN_ID,
-      })) as [bigint, bigint, bigint, bigint, boolean, boolean];
+      const [amount, holdingbonus, deposit_time, reward_time, isactive, isdai] =
+        (await readContract(config, {
+          abi: DWC_ABI,
+          address: DWC_CONTRACT_ADDRESS,
+          functionName: "orderInfos",
+          args: [user, index],
+          chainId: TESTNET_CHAIN_ID,
+        })) as [bigint, bigint, bigint, bigint, boolean, boolean];
       console.log(`Order info for ${user} at index ${index}:`, {
         amount,
         holdingbonus,
@@ -940,7 +1706,14 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         isactive,
         isdai,
       });
-      return { amount, holdingbonus, deposit_time, reward_time, isactive, isdai };
+      return {
+        amount,
+        holdingbonus,
+        deposit_time,
+        reward_time,
+        isactive,
+        isdai,
+      };
     } catch (error: any) {
       console.error(`Error fetching order info: ${error.message || error}`);
       throw error;
@@ -1040,10 +1813,16 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         args: [daiAmount],
         chainId: TESTNET_CHAIN_ID,
       })) as bigint;
-      console.log(`${formatEther(daiAmount)} USDC converts to ${formatEther(tokenAmount)} DWC`);
+      console.log(
+        `${formatEther(daiAmount)} USDC converts to ${formatEther(
+          tokenAmount
+        )} DWC`
+      );
       return tokenAmount;
     } catch (error: any) {
-      console.error(`Error converting USDC to tokens: ${error.message || error}`);
+      console.error(
+        `Error converting USDC to tokens: ${error.message || error}`
+      );
       throw error;
     }
   },
@@ -1057,10 +1836,16 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         args: [tokenAmount],
         chainId: TESTNET_CHAIN_ID,
       })) as bigint;
-      console.log(`${formatEther(tokenAmount)} DWC converts to ${formatEther(daiAmount)} USDC`);
+      console.log(
+        `${formatEther(tokenAmount)} DWC converts to ${formatEther(
+          daiAmount
+        )} USDC`
+      );
       return daiAmount;
     } catch (error: any) {
-      console.error(`Error converting tokens to USDC: ${error.message || error}`);
+      console.error(
+        `Error converting tokens to USDC: ${error.message || error}`
+      );
       throw error;
     }
   },
@@ -1098,7 +1883,10 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
     }
   },
 
-  async getLiquidityPool(): Promise<{ tokenAmount: bigint; daiAmount: bigint }> {
+  async getLiquidityPool(): Promise<{
+    tokenAmount: bigint;
+    daiAmount: bigint;
+  }> {
     try {
       const [tokenAmount, daiAmount] = await Promise.all([
         readContract(config, {
@@ -1114,7 +1902,12 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
           chainId: TESTNET_CHAIN_ID,
         }) as Promise<bigint>,
       ]);
-      console.log(`Liquidity pool: ${formatEther(tokenAmount)} DWC, ${formatEther(daiAmount)} USDC`);
+      console.log("🚀 ~ getLiquidityPool ~ tokenAmount, daiAmount:", tokenAmount, daiAmount)
+      console.log(
+        `Liquidity pool: ${formatEther(tokenAmount)} DWC, ${formatEther(
+          daiAmount
+        )} USDC`
+      );
       return { tokenAmount, daiAmount };
     } catch (error: any) {
       console.error(`Error fetching liquidity pool: ${error.message || error}`);
@@ -1147,7 +1940,9 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         args: [owner, spender],
         chainId: TESTNET_CHAIN_ID,
       })) as bigint;
-      console.log(`Allowance for ${owner} to ${spender}: ${formatEther(allowance)} DWC`);
+      console.log(
+        `Allowance for ${owner} to ${spender}: ${formatEther(allowance)} DWC`
+      );
       return allowance;
     } catch (error: any) {
       console.error(`Error fetching allowance: ${error.message || error}`);
@@ -1166,35 +1961,39 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       console.log(`Withdraw active: ${isActive}`);
       return isActive;
     } catch (error: any) {
-      console.error(`Error checking withdraw status: ${error.message || error}`);
+      console.error(
+        `Error checking withdraw status: ${error.message || error}`
+      );
       throw error;
     }
   },
 
   async getCommunityHoldingFund(): Promise<Address> {
     try {
-      const address = await readContract(config, {
+      const address = (await readContract(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "communityHoldingFund",
         chainId: TESTNET_CHAIN_ID,
-      }) as `0x${string}`;
+      })) as `0x${string}`;
       console.log(`Community holding fund: ${address}`);
       return address;
     } catch (error: any) {
-      console.error(`Error fetching community holding fund: ${error.message || error}`);
+      console.error(
+        `Error fetching community holding fund: ${error.message || error}`
+      );
       throw error;
     }
   },
 
   async getCreator(): Promise<Address> {
     try {
-      const creator = await readContract(config, {
+      const creator = (await readContract(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "creator",
         chainId: TESTNET_CHAIN_ID,
-      }) as `0x${string}`;
+      })) as `0x${string}`;
       console.log(`Creator: ${creator}`);
       return creator;
     } catch (error: any) {
@@ -1230,7 +2029,9 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       console.log(`Day reward percents: ${percents}`);
       return percents;
     } catch (error: any) {
-      console.error(`Error fetching day reward percents: ${error.message || error}`);
+      console.error(
+        `Error fetching day reward percents: ${error.message || error}`
+      );
       throw error;
     }
   },
@@ -1343,7 +2144,9 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       console.log(`Liquidity pool address: ${address}`);
       return address;
     } catch (error: any) {
-      console.error(`Error fetching liquidity pool address: ${error.message || error}`);
+      console.error(
+        `Error fetching liquidity pool address: ${error.message || error}`
+      );
       throw error;
     }
   },
@@ -1359,7 +2162,9 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       console.log(`Price impact wallet: ${address}`);
       return address;
     } catch (error: any) {
-      console.error(`Error fetching price impact wallet: ${error.message || error}`);
+      console.error(
+        `Error fetching price impact wallet: ${error.message || error}`
+      );
       throw error;
     }
   },
@@ -1391,7 +2196,9 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       console.log(`Contract symbol: ${symbol}`);
       return symbol;
     } catch (error: any) {
-      console.error(`Error fetching contract symbol: ${error.message || error}`);
+      console.error(
+        `Error fetching contract symbol: ${error.message || error}`
+      );
       throw error;
     }
   },
@@ -1418,7 +2225,9 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       const fundAddress = await this.getCommunityHoldingFund();
       return this.getUSDCBalance(fundAddress);
     } catch (error: any) {
-      console.error(`Error fetching community fund USDC balance: ${error.message || error}`);
+      console.error(
+        `Error fetching community fund USDT balance: ${error.message || error}`
+      );
       throw error;
     }
   },
@@ -1428,7 +2237,9 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       const fundAddress = await this.getCommunityHoldingFund();
       return this.getDWCBalance(fundAddress);
     } catch (error: any) {
-      console.error(`Error fetching community fund DWC balance: ${error.message || error}`);
+      console.error(
+        `Error fetching community fund DWC balance: ${error.message || error}`
+      );
       throw error;
     }
   },
@@ -1438,7 +2249,9 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       const poolAddress = await this.getLiquidityPoolAddress();
       return this.getUSDCBalance(poolAddress);
     } catch (error: any) {
-      console.error(`Error fetching liquidity pool USDC balance: ${error.message || error}`);
+      console.error(
+        `Error fetching liquidity pool USDC balance: ${error.message || error}`
+      );
       throw error;
     }
   },
@@ -1448,7 +2261,9 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       const poolAddress = await this.getLiquidityPoolAddress();
       return this.getDWCBalance(poolAddress);
     } catch (error: any) {
-      console.error(`Error fetching liquidity pool DWC balance: ${error.message || error}`);
+      console.error(
+        `Error fetching liquidity pool DWC balance: ${error.message || error}`
+      );
       throw error;
     }
   },
@@ -1464,7 +2279,9 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
       console.log(`Withdraw fee address: ${address}`);
       return address;
     } catch (error: any) {
-      console.error(`Error fetching withdraw fee address: ${error.message || error}`);
+      console.error(
+        `Error fetching withdraw fee address: ${error.message || error}`
+      );
       throw error;
     }
   },
@@ -1477,7 +2294,20 @@ async deposit(amount: string, userAddress: Address): Promise<`0x${string}`> {
         functionName: "bonusInfos",
         args: [user],
         chainId: TESTNET_CHAIN_ID,
-      })) as [bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint];
+      })) as [
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint,
+        bigint
+      ];
       console.log(`Bonus info for ${user}:`, result);
       return {
         referralGains: result[0],
