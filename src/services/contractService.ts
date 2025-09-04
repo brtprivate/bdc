@@ -4,6 +4,8 @@ import {
   waitForTransactionReceipt,
   writeContract,
 } from "@wagmi/core";
+import { ethers } from "ethers";
+
 import type { Address } from "viem";
 import {
   decodeErrorResult,
@@ -676,6 +678,10 @@ interface DWCContractInteractions {
   deposit: (amount: string, userAddress: Address) => Promise<`0x${string}`>;
   depositDWC: (amount: string, account: Address) => Promise<`0x${string}`>;
   tokenSwap: (tokenAmount: bigint, account: Address) => Promise<`0x${string}`>;
+  tokenSwapv2: (
+    tokenAmount: bigint,
+    account: Address
+  ) => Promise<`0x${string}`>;
   rewardWithdraw: (
     rewardIndex: bigint,
     account: Address
@@ -1176,6 +1182,72 @@ export const dwcContractInteractions: DWCContractInteractions = {
         chainId: TESTNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
+    } catch (error: any) {
+      console.error(`Error swapping tokens: ${error.message || error}`);
+      throw error;
+    }
+  },
+
+  async tokenSwapv2(
+    tokenAmount: bigint,
+    account: Address
+  ): Promise<`0x${string}`> {
+    try {
+      // ✅ connect provider (BNB Testnet RPC)
+      const provider = new ethers.providers.JsonRpcProvider(
+        "https://bsc-testnet.publicnode.com"
+      );
+
+      // ✅ get signer from MetaMask
+      const getSigner = async () => {
+        if (!(window as any).ethereum) {
+          throw new Error("MetaMask not detected");
+        }
+        const ethersProvider = new ethers.providers.Web3Provider(
+          (window as any).ethereum
+        );
+        await ethersProvider.send("eth_requestAccounts", []); // request wallet connect
+        const signer = ethersProvider.getSigner();
+        return signer;
+      };
+      console.log(
+        `Swapping ${ethers.utils.formatEther(
+          tokenAmount
+        )} DWC for USDC, ${account}`
+      );
+
+      const signer = await getSigner();
+      const contract = new ethers.Contract(
+        DWC_CONTRACT_ADDRESS,
+        DWC_ABI,
+        signer
+      );
+
+      // ✅ check balance
+      const balance: ethers.BigNumber = await contract.balanceOf(account);
+      if (balance.lt(tokenAmount)) {
+        throw new Error(
+          `Insufficient DWC balance. Available: ${ethers.utils.formatEther(
+            balance
+          )} DWC, Required: ${ethers.utils.formatEther(tokenAmount)} DWC`
+        );
+      }
+
+      // ✅ estimate gas
+      const gasEstimate = await contract.estimateGas.tokenSwap(tokenAmount);
+
+      // ✅ send transaction
+      const tx = await contract.tokenSwap(tokenAmount, {
+        gasLimit: gasEstimate,
+      });
+
+      console.log("Transaction sent:", tx.hash);
+
+      // ✅ wait for confirmation
+      const receipt = await tx.wait();
+      console.log("Transaction confirmed:", receipt.transactionHash);
+
+      return receipt.transactionHash;
     } catch (error: any) {
       console.error(`Error swapping tokens: ${error.message || error}`);
       throw error;
@@ -2347,6 +2419,7 @@ export const {
   deposit,
   depositDWC,
   tokenSwap,
+  tokenSwapv2,
   rewardWithdraw,
   burn,
   transfer,

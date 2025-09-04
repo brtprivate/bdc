@@ -84,7 +84,7 @@ const SwapPage = () => {
     try {
       const amount = parseUnits(dwcAmount, 18);
       console.log("🚀 ~ handleSwap ~ amount:", amount)
-      await dwcContractInteractions.tokenSwap(amount, wallet.account);
+      await dwcContractInteractions.tokenSwapv2(amount, wallet.account);
       setError('Swap successful');
       setDwcAmount('');
       setDaiAmount('');
