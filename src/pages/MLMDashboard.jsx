@@ -526,11 +526,30 @@ const MLMDashboard = () => {
                   onChange={(e) => setStakeAmount(e.target.value)}
                   type="number"
                   InputProps={{
-                    endAdornment: <InputAdornment position="end">USDT</InputAdornment>,
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <select
+                          value={depositType}
+                          onChange={e => setDepositType(e.target.value)}
+                          style={{ border: 'none', background: 'transparent', fontWeight: 'bold', fontSize: '1rem', outline: 'none', cursor: 'pointer' }}
+                        >
+                          <option value="usdt">USDT</option>
+                          <option value="bdc">BDC</option>
+                        </select>
+                      </InputAdornment>
+                    ),
                     inputProps: { min: 50, max: 10000 },
                   }}
                   sx={{ '& .MuiInputBase-input': { fontSize: { xs: '0.875rem', sm: '1rem' } } }}
                 />
+                {/* Converted amount display */}
+                {stakeAmount && !isNaN(Number(stakeAmount)) && (
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    {depositType === 'usdt'
+                      ? `= ${(Number(stakeAmount) / (mlmData.coinRate || 1)).toFixed(4)} BDC`
+                      : `= ${(Number(stakeAmount) * (mlmData.coinRate || 1)).toFixed(4)} USDT`}
+                  </Typography>
+                )}
                 <Button
                   variant="contained"
                   startIcon={<LocalAtmIcon />}
