@@ -291,14 +291,30 @@ const MLMDashboard = () => {
         setError('Please enter a valid stake amount.');
         return;
       }
-
-      if (Number(amount) < 50 || Number(amount) > 10000) {
-        setError('Stake amount must be between 50 and 10,000 USDC.');
-        return;
+      debugger
+      if (depositType === 'bdc') {
+        const _amount = (Number(amount) * (mlmData.coinRate || 1)).toFixed(4)
+        if (Number(_amount) < 50 || Number(_amount) > 10000) {
+          setError('Stake amount must be between 50 and 10,000 USDC.');
+          return;
+        }
+      } else {
+        if (Number(amount) < 50 || Number(amount) > 10000) {
+          setError('Stake amount must be between 50 and 10,000 USDC.');
+          return;
+        }
       }
 
-      const txHash = await dwcContractInteractions.deposit(amount, wallet.account);
-      await waitForTransactionReceipt(config, { hash: txHash, chainId: TESTNET_CHAIN_ID });
+
+      if (depositType === 'bdc') {
+        const txHash = await dwcContractInteractions.depositDWC(amount, wallet.account);
+        await waitForTransactionReceipt(config, { hash: txHash, chainId: TESTNET_CHAIN_ID });
+
+      } else {
+
+        const txHash = await dwcContractInteractions.deposit(amount, wallet.account);
+        await waitForTransactionReceipt(config, { hash: txHash, chainId: TESTNET_CHAIN_ID });
+      }
 
       setSuccess(`Successfully staked ${amount} USDC! Transaction: ${txHash}`);
       setStakeAmount('');
