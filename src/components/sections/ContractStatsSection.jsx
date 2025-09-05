@@ -113,9 +113,11 @@ const ContractStatsSection = () => {
         dwcContractInteractions.getMaxPayout(wallet.account)
       ]);
 
-      const [communityDWCBalance, communityUSDCBalance] = await Promise.all([
+      const [communityDWCBalance] = await Promise.all([
         dwcContractInteractions.getDWCBalance(communityHoldingFund),
-        dwcContractInteractions.getUSDCBalance(communityHoldingFund),
+      ]);
+      const [communityUSDCBalance] = await Promise.all([
+        dwcContractInteractions.tokensToDai(communityDWCBalance),
       ]);
 
       const liquidityPool = await dwcContractInteractions.getLiquidityPool();
@@ -267,43 +269,91 @@ const ContractStatsSection = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={6}>
           <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
             <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <BarChartIcon sx={{ color: 'warning.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
-                  Community Fund BDC
+              {/* Header */}
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <BarChartIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.5rem' }} />
+                <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
+                  Community Fund
                 </Typography>
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'warning.main', fontSize: '1.25rem' }}>
-                {formatDWC(statsData.communityFundDWC)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                BDC
-              </Typography>
+
+              {/* Values Row */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 3 }}>
+                {/* BDC */}
+                <Box>
+                  <Typography
+                    variant="h5"
+                    sx={{ fontWeight: 'bold', color: 'warning.main', fontSize: '1.25rem' }}
+                  >
+                    {formatDWC(statsData.communityFundDWC)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                    BDC
+                  </Typography>
+                </Box>
+
+                {/* USDT */}
+                <Box>
+                  <Typography
+                    variant="h5"
+                    sx={{ fontWeight: 'bold', color: 'info.main', fontSize: '1.25rem' }}
+                  >
+                    {formatCurrency(statsData.communityFundUSDC)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                    USDT
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} sm={6} md={6}>
+          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
+            <CardContent>
+              {/* Header */}
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <PoolIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.5rem' }} />
+                <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
+                  Liquidity Pool Fund
+                </Typography>
+              </Box>
+
+              {/* Values Row */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 3 }}>
+                {/* BDC */}
+                <Box>
+                  <Typography
+                    variant="h5"
+                    sx={{ fontWeight: 'bold', color: 'primary.main', fontSize: '1.25rem' }}
+                  >
+                    {formatDWC(statsData.liquidityPoolFund)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                    BDC
+                  </Typography>
+                </Box>
+
+                {/* USDT */}
+                <Box>
+                  <Typography
+                    variant="h5"
+                    sx={{ fontWeight: 'bold', color: 'secondary.main', fontSize: '1.25rem' }}
+                  >
+                    ${formatDWC(statsData?.liquidityPoolFundUSDT)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                    USDT
+                  </Typography>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <BarChartIcon sx={{ color: 'info.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
-                  Community Fund USDT
-                </Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'info.main', fontSize: '1.25rem' }}>
-                {formatCurrency(statsData.communityFundUSDC)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                USDT
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
 
         {/* Referral Address */}
         {/* <Grid item xs={12} sm={6} md={4}>
@@ -428,7 +478,7 @@ const ContractStatsSection = () => {
                 </Typography>
               </Box>
               <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'info.main', fontSize: '1.25rem' }}>
-                {statsData.userRank}
+                {statsData.userStatus === 'INACTIVE' ? "N/A" : statsData.userRank}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
                 Rank Status
@@ -441,12 +491,12 @@ const ContractStatsSection = () => {
           <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <CheckCircleIcon sx={{ color: statsData.userStatus ? "error.main" : 'success.main', mr: 1, fontSize: '1.5rem' }} />
+                <CheckCircleIcon sx={{ color: statsData.userStatus === 'INACTIVE' ? "error.main" : 'success.main', mr: 1, fontSize: '1.5rem' }} />
                 <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
                   Contract Status
                 </Typography>
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: statsData.userStatus ? "error.main" : 'success.main', fontSize: '1.25rem' }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: statsData.userStatus === 'INACTIVE' ? "error.main" : 'success.main', fontSize: '1.25rem' }}>
                 {statsData.userStatus}
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
@@ -456,42 +506,8 @@ const ContractStatsSection = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <PoolIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
-                  Liquidity Pool Fund
-                </Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', fontSize: '1.25rem' }}>
-                {formatDWC(statsData.liquidityPoolFund)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                BDC
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <PoolIcon sx={{ color: 'secondary.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
-                  Liquidity Pool Fund
-                </Typography>
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'secondary.main', fontSize: '1.25rem' }}>
-                ${formatDWC(statsData?.liquidityPoolFundUSDT)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                USDT
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+
+
 
         {/* <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>

@@ -561,9 +561,10 @@ const MLMDashboard = () => {
               <Box sx={{ display: 'flex', gap: 1 }}>
                 <Button
                   variant="contained"
-                  onClick={() => {
+                  onClick={async () => {
                     if (wallet.account) {
-                      navigator.clipboard.writeText(wallet.account);
+                      const refLink = `${window.location.origin}?ref=${wallet.account}`;
+                      await navigator.clipboard.writeText(refLink);
                       setSuccess('Referral code copied to clipboard!');
                     }
                   }}

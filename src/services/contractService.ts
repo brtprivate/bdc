@@ -1902,6 +1902,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
   },
 
   async tokensToDai(tokenAmount: bigint): Promise<bigint> {
+    console.log("🚀 ~ tokensToDai ~ tokenAmount:", tokenAmount)
     try {
       const daiAmount = (await readContract(config, {
         abi: DWC_ABI,
