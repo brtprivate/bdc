@@ -277,7 +277,7 @@ const MyHolding = () => {
         </Button>
       </Box>
 
-      <Grid container spacing={3} justifyContent="center">
+      {/* <Grid container spacing={3} justifyContent="center">
         {[
           {
             icon: <AccountBalanceWalletIcon />,
@@ -345,7 +345,7 @@ const MyHolding = () => {
             </Card>
           </Grid>
         ))}
-      </Grid>
+      </Grid> */}
 
       <Box sx={{ mt: 6 }}>
         <Typography variant="h5" align="center" sx={{ fontWeight: 'bold', mb: 3 }}>
@@ -368,7 +368,7 @@ const MyHolding = () => {
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Amount</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Status</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Date</TableCell>
-                <TableCell align="center" sx={{ fontWeight: 'bold' }}>Action</TableCell>
+                {/* <TableCell align="center" sx={{ fontWeight: 'bold' }}>Action</TableCell> */}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -387,7 +387,7 @@ const MyHolding = () => {
                     {row.status}
                   </TableCell>
                   <TableCell align="center">{row.date}</TableCell>
-                  <TableCell align="center">
+                  {/* <TableCell align="center">
                     {row.status === 'Active' && (
                       <Button
                         variant="contained"
@@ -398,7 +398,7 @@ const MyHolding = () => {
                         Withdraw
                       </Button>
                     )}
-                  </TableCell>
+                  </TableCell> */}
                 </TableRow>
               ))}
             </TableBody>
