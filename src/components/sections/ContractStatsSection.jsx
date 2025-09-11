@@ -302,16 +302,35 @@ const ContractStatsSection = () => {
               </Box>
 
               {/* Values Row */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: { xs: "flex-start", sm: "space-between" },
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: { xs: "flex-start", sm: "center" },
+                  gap: { xs: 1.5, sm: 3 },
+                  flexWrap: "wrap",
+                  width: "100%",
+                }}
+              >
                 {/* BDC */}
                 <Box>
                   <Typography
                     variant="h5"
-                    sx={{ fontWeight: 'bold', color: 'warning.main', fontSize: '1.25rem' }}
+                    sx={{
+                      fontWeight: "bold",
+                      color: "warning.main",
+                      fontSize: { xs: "1rem", sm: "1.25rem" }, // smaller on mobile
+                      wordBreak: "break-word",
+                    }}
                   >
                     {formatDWC(statsData.communityFundDWC)}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: "0.75rem", sm: "0.8rem" } }}
+                  >
                     BDC
                   </Typography>
                 </Box>
@@ -320,15 +339,25 @@ const ContractStatsSection = () => {
                 <Box>
                   <Typography
                     variant="h5"
-                    sx={{ fontWeight: 'bold', color: 'info.main', fontSize: '1.25rem' }}
+                    sx={{
+                      fontWeight: "bold",
+                      color: "info.main",
+                      fontSize: { xs: "1rem", sm: "1.25rem" },
+                      wordBreak: "break-word",
+                    }}
                   >
                     {formatCurrency(statsData.communityFundUSDC)}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: "0.75rem", sm: "0.8rem" } }}
+                  >
                     USDT
                   </Typography>
                 </Box>
               </Box>
+
             </CardContent>
           </Card>
         </Grid>

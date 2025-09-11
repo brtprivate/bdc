@@ -1,43 +1,47 @@
-import React from 'react';
-import Logo from './common/Logo';
+import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
+import CloseIcon from "@mui/icons-material/Close";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
+import HomeIcon from "@mui/icons-material/Home";
+import LogoutIcon from "@mui/icons-material/Logout";
+import MenuIcon from "@mui/icons-material/Menu";
+import PeopleIcon from "@mui/icons-material/People";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import {
   AppBar,
+  Avatar,
+  Box,
+  Button,
+  Chip,
+  Container,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
   Toolbar,
   Typography,
-  Button,
-  Box,
-  Chip,
-  Tooltip,
-  Container,
-  useTheme,
   useMediaQuery,
-  Avatar,
-  BottomNavigation,
-  BottomNavigationAction,
-  Paper
-} from '@mui/material';
-import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
-import { useWallet } from '../context/WalletContext';
-import { useMLM } from '../context/MLMContext';
-import { useWeb3Modal, useWeb3ModalState } from '@web3modal/wagmi/react';
-import HomeIcon from '@mui/icons-material/Home';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import LogoutIcon from '@mui/icons-material/Logout';
-import CasinoIcon from '@mui/icons-material/Casino';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import PeopleIcon from '@mui/icons-material/People';
-import DiamondIcon from '@mui/icons-material/Diamond';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+  useTheme,
+} from "@mui/material";
+import { useWeb3Modal, useWeb3ModalState } from "@web3modal/wagmi/react";
+import React, { useState } from "react";
+import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
+import { useMLM } from "../context/MLMContext";
+import { useWallet } from "../context/WalletContext";
+import Logo from "./common/Logo";
 
 interface NavbarProps {
   selectedSection?: string;
   onSectionChange?: (section: string) => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => {
+const Navbar: React.FC<NavbarProps> = ({
+  selectedSection,
+  onSectionChange,
+}) => {
   // Use only ThirdWeb MLM Context for wallet connections
   const wallet = useWallet();
   const mlm = useMLM();
@@ -46,28 +50,35 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
   const navigate = useNavigate();
 
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const location = useLocation();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const toggleDrawer = () => {
+    setDrawerOpen(!drawerOpen);
+  };
 
   // Force user existence check when wallet connects and is on correct network
   React.useEffect(() => {
     if (wallet.isConnected && wallet.account && wallet.isCorrectNetwork) {
-      console.log('Navbar: Wallet connected on correct network, checking user existence');
+      console.log(
+        "Navbar: Wallet connected on correct network, checking user existence"
+      );
       // Add a small delay to ensure context is ready
       const timer = setTimeout(async () => {
         try {
-          console.log('Navbar: Triggering user existence check');
+          console.log("Navbar: Triggering user existence check");
           const isRegistered = await mlm.checkMLMRegistration();
-          console.log('Navbar: User existence check result:', isRegistered);
+          console.log("Navbar: User existence check result:", isRegistered);
         } catch (error) {
-          console.error('Navbar: Error checking user existence:', error);
+          console.error("Navbar: Error checking user existence:", error);
           // Try again after a longer delay
           setTimeout(async () => {
             try {
-              console.log('Navbar: Retrying user existence check');
+              console.log("Navbar: Retrying user existence check");
               await mlm.checkMLMRegistration();
             } catch (retryError) {
-              console.error('Navbar: Retry failed:', retryError);
+              console.error("Navbar: Retry failed:", retryError);
             }
           }, 3000);
         }
@@ -80,10 +91,10 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
   const handleManualRefresh = async () => {
     if (wallet.isConnected && wallet.account && wallet.isCorrectNetwork) {
       try {
-        console.log('Navbar: Manual refresh triggered');
+        console.log("Navbar: Manual refresh triggered");
         await mlm.checkMLMRegistration();
       } catch (error) {
-        console.error('Navbar: Manual refresh failed:', error);
+        console.error("Navbar: Manual refresh failed:", error);
       }
     }
   };
@@ -96,8 +107,8 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
   };
 
   // Check if we're in gaming or MLM section
-  const isGamingSection = location.pathname.startsWith('/usd/gaming');
-  const isMLMSection = location.pathname.startsWith('/usd/mlm');
+  const isGamingSection = location.pathname.startsWith("/usd/gaming");
+  const isMLMSection = location.pathname.startsWith("/usd/mlm");
 
   // Use Web3Modal for all wallet operations (MLM and Gaming)
   const currentWallet = {
@@ -108,34 +119,32 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
     loading: wallet.loading,
     isRegistered: mlm.isMLMRegistered,
     isCorrectNetwork: wallet.isCorrectNetwork,
-    switchToCorrectNetwork: wallet.switchToCorrectNetwork
+    switchToCorrectNetwork: wallet.switchToCorrectNetwork,
   };
 
   // Gradient background for AppBar - different for MLM and Gaming
   const appBarStyle = {
     background: isMLMSection
-      ? 'linear-gradient(90deg, #FFA000 0%, #FF8F00 100%)'
-      : 'linear-gradient(90deg, #6200ea 0%, #3f51b5 100%)',
-    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+      ? "linear-gradient(90deg, #FFA000 0%, #FF8F00 100%)"
+      : "linear-gradient(90deg, #6200ea 0%, #3f51b5 100%)",
+    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
   };
 
   // Get page title based on current section
   const getPageTitle = () => {
     if (isMLMSection) {
-      return 'BDC STACK';
+      return "BDC STACK";
     } else if (isGamingSection) {
-      return 'BDC STACK';
+      return "BDC STACK";
     }
-    return 'BDC STACK';
+    return "BDC STACK";
   };
-
-
 
   return (
     <>
       <AppBar position="sticky" sx={appBarStyle} elevation={0}>
         <Container maxWidth="lg" sx={{ px: { xs: 0.25, sm: 0.5, md: 1 } }}>
-        <Toolbar disableGutters sx={{ minHeight: { xs: 90, sm: 100 } }}>
+          <Toolbar disableGutters sx={{ minHeight: { xs: 90, sm: 100 } }}>
             {/* Logo */}
             <Typography
               variant="h6"
@@ -144,45 +153,62 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
               sx={{
                 flexGrow: 1,
                 fontWeight: 700,
-                textDecoration: 'none',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                fontSize: { xs: '0.9rem', sm: '1.1rem' }
+                textDecoration: "none",
+                color: "white",
+                display: "flex",
+                alignItems: "center",
+                fontSize: { xs: "0.9rem", sm: "1.1rem" },
               }}
             >
-              <Logo
-                size="navbar"
-                sx={{ mr: { xs: 0.2, sm: 0.3 } }}
-              />
-              <Box component="span" sx={{
-                ml: { xs: 0.2, sm: 0.3 },
-                display: { xs: 'none', sm: 'block' }
-              }}>
+              <Logo size="navbar" sx={{ mr: { xs: 0.2, sm: 0.3 } }} />
+              <Box
+                component="span"
+                sx={{
+                  ml: { xs: 0.2, sm: 0.3 },
+                  display: { xs: "none", sm: "block" },
+                }}
+              >
                 {getPageTitle()}
               </Box>
               {isMobile && (
-                <Box component="span" sx={{ ml: 0.2, fontSize: '0.8rem' }}>
+                <Box component="span" sx={{ ml: 0.2, fontSize: "0.8rem" }}>
                   BDC
                 </Box>
               )}
             </Typography>
 
-            {/* Navigation - Show only essential items on mobile */}
+            {/* Hamburger Menu for Mobile */}
+            {isMobile && (
+              <IconButton
+                edge="start"
+                color="inherit"
+                aria-label="menu"
+                onClick={toggleDrawer}
+                sx={{ mr: 1 }}
+              >
+                <MenuIcon />
+              </IconButton>
+            )}
+
+            {/* Navigation - Show only on desktop */}
             {!isMobile && (
-              <Box sx={{
-                display: 'flex',
-                gap: 2,
-                alignItems: 'center'
-              }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 2,
+                  alignItems: "center",
+                }}
+              >
                 <Button
                   color="inherit"
                   component={RouterLink}
                   to="/"
                   sx={{
-                    borderRadius: '20px',
+                    borderRadius: "20px",
                     px: 2,
-                    backgroundColor: isActive('/') ? 'rgba(255, 255, 255, 0.15)' : 'transparent'
+                    backgroundColor: isActive("/")
+                      ? "rgba(255, 255, 255, 0.15)"
+                      : "transparent",
                   }}
                   startIcon={<HomeIcon />}
                 >
@@ -193,9 +219,11 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
                   component={RouterLink}
                   to="/my-holding"
                   sx={{
-                    borderRadius: '20px',
+                    borderRadius: "20px",
                     px: 2,
-                    backgroundColor: isActive('/my-holding') ? 'rgba(255, 255, 255, 0.15)' : 'transparent'
+                    backgroundColor: isActive("/my-holding")
+                      ? "rgba(255, 255, 255, 0.15)"
+                      : "transparent",
                   }}
                   startIcon={<AccountBalanceWalletIcon />}
                 >
@@ -206,9 +234,11 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
                   component={RouterLink}
                   to="/my-team"
                   sx={{
-                    borderRadius: '20px',
+                    borderRadius: "20px",
                     px: 2,
-                    backgroundColor: isActive('/my-team') ? 'rgba(255, 255, 255, 0.15)' : 'transparent'
+                    backgroundColor: isActive("/my-team")
+                      ? "rgba(255, 255, 255, 0.15)"
+                      : "transparent",
                   }}
                   startIcon={<PeopleIcon />}
                 >
@@ -219,9 +249,11 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
                   component={RouterLink}
                   to="/swap"
                   sx={{
-                    borderRadius: '20px',
+                    borderRadius: "20px",
                     px: 2,
-                    backgroundColor: isActive('/swap') ? 'rgba(255, 255, 255, 0.15)' : 'transparent'
+                    backgroundColor: isActive("/swap")
+                      ? "rgba(255, 255, 255, 0.15)"
+                      : "transparent",
                   }}
                   startIcon={<SwapHorizIcon />}
                 >
@@ -232,40 +264,44 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
                   component={RouterLink}
                   to="/rewards"
                   sx={{
-                    borderRadius: '20px',
+                    borderRadius: "20px",
                     px: 2,
-                    backgroundColor: isActive('/rewards') ? 'rgba(255, 255, 255, 0.15)' : 'transparent'
+                    backgroundColor: isActive("/rewards")
+                      ? "rgba(255, 255, 255, 0.15)"
+                      : "transparent",
                   }}
                   startIcon={<EmojiEventsIcon />}
                 >
                   Rewards
                 </Button>
 
-                {currentWallet.isConnected && !currentWallet.isRegistered && !mlm.isLoading && (
-                  <Button
-                    color="inherit"
-                    component={RouterLink}
-                    to="/"
-                    sx={{
-                      borderRadius: '20px',
-                      px: 2,
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                      border: '2px solid #FF8F00'
-                    }}
-                    startIcon={<PersonAddIcon />}
-                  >
-                    Register Now
-                  </Button>
-                )}
+                {currentWallet.isConnected &&
+                  !currentWallet.isRegistered &&
+                  !mlm.isLoading && (
+                    <Button
+                      color="inherit"
+                      component={RouterLink}
+                      to="/"
+                      sx={{
+                        borderRadius: "20px",
+                        px: 2,
+                        backgroundColor: "rgba(255, 255, 255, 0.15)",
+                        border: "2px solid #FF8F00",
+                      }}
+                      startIcon={<PersonAddIcon />}
+                    >
+                      Register Now
+                    </Button>
+                  )}
                 {currentWallet.isConnected && mlm.isLoading && (
                   <Button
                     color="inherit"
                     disabled
                     sx={{
-                      borderRadius: '20px',
+                      borderRadius: "20px",
                       px: 2,
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      border: '2px solid rgba(255, 255, 255, 0.3)'
+                      backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      border: "2px solid rgba(255, 255, 255, 0.3)",
                     }}
                   >
                     Checking...
@@ -275,12 +311,14 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
             )}
 
             {/* Wallet Connection */}
-            <Box sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: { xs: 0.3, sm: 0.5, md: 1 },
-              ml: { xs: 0.3, sm: 0.5, md: 1 }
-            }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: { xs: 0.3, sm: 0.5, md: 1 },
+                ml: { xs: 0.3, sm: 0.5, md: 1 },
+              }}
+            >
               {currentWallet.isConnected && (
                 <>
                   {/* {!currentWallet.isCorrectNetwork && (
@@ -303,20 +341,31 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
                   )} */}
                   {!isMobile && (
                     <Chip
-                      avatar={<Avatar sx={{
-                        bgcolor: currentWallet.isRegistered ? theme.palette.success.main : theme.palette.grey[500],
-                        width: 32,
-                        height: 32,
-                        fontSize: '0.875rem'
-                      }}>
-                        U
-                      </Avatar>}
-                      label={`${currentWallet.account?.substring(0, 6)}...${currentWallet.account?.substring(currentWallet.account.length - 4)}`}
+                      avatar={
+                        <Avatar
+                          sx={{
+                            bgcolor: currentWallet.isRegistered
+                              ? theme.palette.success.main
+                              : theme.palette.grey[500],
+                            width: 32,
+                            height: 32,
+                            fontSize: "0.875rem",
+                          }}
+                        >
+                          U
+                        </Avatar>
+                      }
+                      label={`${currentWallet.account?.substring(
+                        0,
+                        6
+                      )}...${currentWallet.account?.substring(
+                        currentWallet.account.length - 4
+                      )}`}
                       sx={{
-                        borderColor: 'white',
-                        color: 'white',
-                        '& .MuiChip-label': { px: 1 },
-                        fontSize: '0.875rem'
+                        borderColor: "white",
+                        color: "white",
+                        "& .MuiChip-label": { px: 1 },
+                        fontSize: "0.875rem",
                       }}
                       variant="outlined"
                     />
@@ -331,15 +380,18 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
                     variant="outlined"
                     onClick={currentWallet.disconnectWallet}
                     sx={{
-                      borderColor: 'rgba(255, 255, 255, 0.5)',
-                      '&:hover': { borderColor: 'white', backgroundColor: 'rgba(255, 255, 255, 0.1)' },
+                      borderColor: "rgba(255, 255, 255, 0.5)",
+                      "&:hover": {
+                        borderColor: "white",
+                        backgroundColor: "rgba(255, 255, 255, 0.1)",
+                      },
                       px: { xs: 1, sm: 2 },
-                      fontSize: { xs: '0.7rem', sm: '0.875rem' },
-                      minWidth: 'auto'
+                      fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                      minWidth: "auto",
                     }}
                     startIcon={!isMobile ? <LogoutIcon /> : undefined}
                   >
-                    {isMobile ? 'Exit' : 'Disconnect'}
+                    {isMobile ? "Exit" : "Disconnect"}
                   </Button>
                 </>
               ) : (
@@ -347,227 +399,254 @@ const Navbar: React.FC<NavbarProps> = ({ selectedSection, onSectionChange }) => 
                   variant="contained"
                   onClick={() => open()}
                   sx={{
-                    backgroundColor: '#FFA000',
-                    '&:hover': { backgroundColor: '#FF8F00' },
+                    backgroundColor: "#FFA000",
+                    "&:hover": { backgroundColor: "#FF8F00" },
                     px: { xs: 1, sm: 2 },
-                    fontSize: { xs: '0.7rem', sm: '0.875rem' },
-                    minWidth: 'auto'
+                    fontSize: { xs: "0.7rem", sm: "0.875rem" },
+                    minWidth: "auto",
                   }}
-                  startIcon={!isMobile ? <AccountBalanceWalletIcon /> : undefined}
+                  startIcon={
+                    !isMobile ? <AccountBalanceWalletIcon /> : undefined
+                  }
                 >
-                  {isMobile ? 'Connect' : 'Connect Wallet'}
+                  {isMobile ? "Connect" : "Connect Wallet"}
                 </Button>
               )}
-
             </Box>
           </Toolbar>
         </Container>
       </AppBar>
 
-      {/* Mobile Bottom Navigation - MLM Sidebar Items */}
-      {isMobile && isMLMSection && currentWallet.isConnected && currentWallet.isRegistered && !isModalOpen && (
-        <Paper
+      {/* Mobile Drawer */}
+      <Drawer
+        anchor="left"
+        open={drawerOpen}
+        onClose={toggleDrawer}
+        sx={{
+          "& .MuiDrawer-paper": {
+            width: 280,
+            background: isMLMSection
+              ? "linear-gradient(180deg, #FFA000 0%, #FF8F00 100%)"
+              : "linear-gradient(180deg, #6200ea 0%, #3f51b5 100%)",
+            color: "white",
+            paddingTop: 2,
+          },
+          "& .MuiListItemText-root": {
+            color: "white",
+          },
+          "& .MuiTypography-root": {
+            color: "white",
+          },
+        }}
+      >
+        <Box
           sx={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1000,
-            borderTop: '1px solid #333'
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            px: 2,
+            mb: 2,
           }}
-          elevation={3}
         >
-          <Box sx={{
-            overflowX: 'auto',
-            '&::-webkit-scrollbar': { display: 'none' },
-            scrollbarWidth: 'none'
-          }}>
-            <BottomNavigation
-              value={location.pathname === '/my-holding' ? 'my-holding' : location.pathname === '/swap' ? 'swap' : (new URLSearchParams(location.search).get('section') || 'dashboard')}
-              sx={{
-                bgcolor: '#FFA000',
-                '& .MuiBottomNavigationAction-root': {
-                  color: 'rgba(255, 255, 255, 0.7)',
-                  fontSize: '0.7rem',
-                  minWidth: 'auto',
-                  padding: '6px 8px',
-                  flex: 1,
-                  '&.Mui-selected': {
-                    color: '#ffffff',
-                    fontSize: '0.75rem'
-                  }
-                }
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 700, display: "flex", alignItems: "center" }}
+          >
+            <Logo size="small" sx={{ mr: 1 }} />
+            {getPageTitle()}
+          </Typography>
+          <IconButton onClick={toggleDrawer} sx={{ color: "white" }}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+
+        <Divider sx={{ backgroundColor: "rgba(255, 255, 255, 0.2)", mb: 2 }} />
+
+        <List>
+          <ListItem
+            component={RouterLink}
+            to="/"
+            onClick={toggleDrawer}
+            sx={{
+              backgroundColor: isActive("/")
+                ? "rgba(255, 255, 255, 0.15)"
+                : "transparent",
+              borderRadius: "4px",
+              mx: 1,
+              mb: 0.5,
+            }}
+          >
+            <ListItemIcon sx={{ color: "white", minWidth: 40 }}>
+              <HomeIcon />
+            </ListItemIcon>
+            <ListItemText primary="Home" sx={{ color: "white" }} />
+          </ListItem>
+
+          <ListItem
+            component={RouterLink}
+            to="/my-holding"
+            onClick={toggleDrawer}
+            sx={{
+              backgroundColor: isActive("/my-holding")
+                ? "rgba(255, 255, 255, 0.15)"
+                : "transparent",
+              borderRadius: "4px",
+              mx: 1,
+              mb: 0.5,
+            }}
+          >
+            <ListItemIcon sx={{ color: "white", minWidth: 40 }}>
+              <AccountBalanceWalletIcon />
+            </ListItemIcon>
+            <ListItemText primary="My Holding" sx={{ color: "white" }} />
+          </ListItem>
+
+          <ListItem
+            component={RouterLink}
+            to="/my-team"
+            onClick={toggleDrawer}
+            sx={{
+              backgroundColor: isActive("/my-team")
+                ? "rgba(255, 255, 255, 0.15)"
+                : "transparent",
+              borderRadius: "4px",
+              mx: 1,
+              mb: 0.5,
+            }}
+          >
+            <ListItemIcon sx={{ color: "white", minWidth: 40 }}>
+              <PeopleIcon />
+            </ListItemIcon>
+            <ListItemText primary="My Team" sx={{ color: "white" }} />
+          </ListItem>
+
+          <ListItem
+            component={RouterLink}
+            to="/swap"
+            onClick={toggleDrawer}
+            sx={{
+              backgroundColor: isActive("/swap")
+                ? "rgba(255, 255, 255, 0.15)"
+                : "transparent",
+              borderRadius: "4px",
+              mx: 1,
+              mb: 0.5,
+            }}
+          >
+            <ListItemIcon sx={{ color: "white", minWidth: 40 }}>
+              <SwapHorizIcon />
+            </ListItemIcon>
+            <ListItemText primary="Swap" sx={{ color: "white" }} />
+          </ListItem>
+
+          <ListItem
+            component={RouterLink}
+            to="/rewards"
+            onClick={toggleDrawer}
+            sx={{
+              backgroundColor: isActive("/rewards")
+                ? "rgba(255, 255, 255, 0.15)"
+                : "transparent",
+              borderRadius: "4px",
+              mx: 1,
+              mb: 0.5,
+            }}
+          >
+            <ListItemIcon sx={{ color: "white", minWidth: 40 }}>
+              <EmojiEventsIcon />
+            </ListItemIcon>
+            <ListItemText primary="Rewards" sx={{ color: "white" }} />
+          </ListItem>
+
+          {currentWallet.isConnected &&
+            !currentWallet.isRegistered &&
+            !mlm.isLoading && (
+              <ListItem
+                component={RouterLink}
+                to="/"
+                onClick={toggleDrawer}
+                sx={{
+                  backgroundColor: "rgba(255, 255, 255, 0.15)",
+                  borderRadius: "4px",
+                  mx: 1,
+                  mb: 0.5,
+                  border: "1px solid #FF8F00",
+                }}
+              >
+                <ListItemIcon sx={{ color: "white", minWidth: 40 }}>
+                  <PersonAddIcon />
+                </ListItemIcon>
+                <ListItemText primary="Register Now" sx={{ color: "white" }} />
+              </ListItem>
+            )}
+        </List>
+
+        <Box sx={{ position: "absolute", bottom: 16, width: "100%", px: 2 }}>
+          {currentWallet.isConnected ? (
+            <>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1, pl: 2 }}>
+                <Avatar
+                  sx={{
+                    bgcolor: currentWallet.isRegistered
+                      ? theme.palette.success.main
+                      : theme.palette.grey[500],
+                    width: 32,
+                    height: 32,
+                    fontSize: "0.875rem",
+                    mr: 1,
+                  }}
+                >
+                  U
+                </Avatar>
+                <Typography variant="body2" sx={{ color: "white" }}>
+                  {`${currentWallet.account?.substring(
+                    0,
+                    6
+                  )}...${currentWallet.account?.substring(
+                    currentWallet.account.length - 4
+                  )}`}
+                </Typography>
+              </Box>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => {
+                  currentWallet.disconnectWallet();
+                  toggleDrawer();
+                }}
+                sx={{
+                  borderColor: "rgba(255, 255, 255, 0.5)",
+                  color: "white",
+                  "&:hover": {
+                    borderColor: "white",
+                    backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  },
+                }}
+                startIcon={<LogoutIcon />}
+              >
+                Disconnect
+              </Button>
+            </>
+          ) : (
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => {
+                open();
+                toggleDrawer();
               }}
-              showLabels
+              sx={{
+                backgroundColor: "#FFA000",
+                "&:hover": { backgroundColor: "#FF8F00" },
+              }}
+              startIcon={<AccountBalanceWalletIcon />}
             >
-              <BottomNavigationAction
-                label="Dashboard"
-                value="dashboard"
-                icon={<DashboardIcon sx={{ fontSize: 18 }} />}
-                onClick={() => navigate('/?section=dashboard')}
-              />
-              <BottomNavigationAction
-                label="My Holding"
-                value="my-holding"
-                icon={<AccountBalanceWalletIcon sx={{ fontSize: 18 }} />}
-                component={RouterLink}
-                to="/my-holding"
-              />
-              <BottomNavigationAction
-                label="My Team"
-                value="my-team"
-                icon={<PeopleIcon sx={{ fontSize: 18 }} />}
-                component={RouterLink}
-                to="/my-team"
-              />
-              <BottomNavigationAction
-                label="Packages"
-                value="packages"
-                icon={<DiamondIcon sx={{ fontSize: 18 }} />}
-                onClick={() => navigate('/?section=packages')}
-              />
-              <BottomNavigationAction
-                label="My Plans"
-                value="my-investments"
-                icon={<AccountBalanceWalletIcon sx={{ fontSize: 18 }} />}
-                onClick={() => navigate('/?section=my-investments')}
-              />
-              <BottomNavigationAction
-                label="ROI"
-                value="daily-roi"
-                icon={<TrendingUpIcon sx={{ fontSize: 18 }} />}
-                onClick={() => navigate('/?section=daily-roi')}
-              />
-              <BottomNavigationAction
-                label="Team"
-                value="team-structure"
-                icon={<PeopleIcon sx={{ fontSize: 18 }} />}
-                onClick={() => navigate('/?section=team-structure')}
-              />
-              <BottomNavigationAction
-                label="Swap"
-                value="swap"
-                icon={<SwapHorizIcon sx={{ fontSize: 18 }} />}
-                component={RouterLink}
-                to="/swap"
-              />
-            </BottomNavigation>
-          </Box>
-        </Paper>
-      )}
-
-      {/* Mobile Bottom Navigation - Gaming Section */}
-      {isMobile && isGamingSection && !isModalOpen && (
-        <Paper
-          sx={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1000,
-            borderTop: '1px solid #333'
-          }}
-          elevation={3}
-        >
-          <BottomNavigation
-            value={location.pathname}
-            sx={{
-              bgcolor: '#6200ea',
-              '& .MuiBottomNavigationAction-root': {
-                color: 'rgba(255, 255, 255, 0.7)',
-                '&.Mui-selected': {
-                  color: '#ffffff'
-                }
-              }
-            }}
-          >
-            <BottomNavigationAction
-              label="Home"
-              value="/"
-              icon={<HomeIcon />}
-              component={RouterLink}
-              to="/"
-            />
-            <BottomNavigationAction
-              label="Dashboard"
-              value="/usd/gaming/dashboard"
-              icon={<DashboardIcon />}
-              component={RouterLink}
-              to="/usd/gaming/dashboard"
-            />
-            <BottomNavigationAction
-              label="Pools"
-              value="/usd/gaming/pools"
-              icon={<CasinoIcon />}
-              component={RouterLink}
-              to="/usd/gaming/pools"
-            />
-          </BottomNavigation>
-        </Paper>
-      )}
-
-      {/* Mobile Bottom Navigation - General/Registration */}
-      {isMobile && (!currentWallet.isConnected || !currentWallet.isRegistered) && !isModalOpen && (
-        <Paper
-          sx={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1000,
-            borderTop: '1px solid #333'
-          }}
-          elevation={3}
-        >
-          <BottomNavigation
-            value={location.pathname}
-            sx={{
-              bgcolor: isMLMSection ? '#FFA000' : '#6200ea',
-              '& .MuiBottomNavigationAction-root': {
-                color: 'rgba(255, 255, 255, 0.7)',
-                '&.Mui-selected': {
-                  color: '#ffffff'
-                }
-              }
-            }}
-          >
-            <BottomNavigationAction
-              label="Home"
-              value="/"
-              icon={<HomeIcon />}
-              component={RouterLink}
-              to="/"
-            />
-
-            {currentWallet.isConnected && !currentWallet.isRegistered && (
-              <BottomNavigationAction
-                label={isMLMSection ? "Join" : "Register"}
-                value={isMLMSection ? "/usd/mlm/register" : "/usd/gaming/register"}
-                icon={<PersonAddIcon />}
-                component={RouterLink}
-                to={isMLMSection ? "/usd/mlm/register" : "/usd/gaming/register"}
-              />
-            )}
-
-            {currentWallet.isConnected && (
-              <BottomNavigationAction
-                label="Refresh"
-                value="/refresh"
-                icon={<span style={{ fontSize: '18px' }}>↻</span>}
-                onClick={handleManualRefresh}
-              />
-            )}
-            {!currentWallet.isConnected && (
-              <BottomNavigationAction
-                label="Connect"
-                value="/connect"
-                icon={<AccountBalanceWalletIcon />}
-                onClick={() => open()}
-              />
-            )}
-          </BottomNavigation>
-        </Paper>
-      )}
+              Connect Wallet
+            </Button>
+          )}
+        </Box>
+      </Drawer>
     </>
   );
 };

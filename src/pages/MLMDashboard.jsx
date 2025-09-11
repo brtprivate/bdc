@@ -21,7 +21,7 @@ import {
   Typography
 } from '@mui/material';
 import { readContract, waitForTransactionReceipt } from '@wagmi/core';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { decodeErrorResult, formatUnits, parseUnits } from 'viem';
 import { useChainId, useSwitchChain } from 'wagmi';
 import { config } from '../config/web3modal';
@@ -76,6 +76,17 @@ const MLMDashboard = () => {
     dwcBalance: 0,
     coinRate: 0,
   });
+  const [rewardsData, setRewardsData] = useState({
+    retentionBonus: 0,
+    releasedRetentionBonus: 0,
+    residualBonus: 0,
+    levelIncome: 0,
+    royaltyIncome: 0,
+    totalIncome: 0,
+    totalWithdraw: 0,
+    availableToWithdraw: 0,
+    bnbBalance: 0,
+  });
   const [orders, setOrders] = useState([]);
 
   // Format DWC amount
@@ -84,7 +95,7 @@ const MLMDashboard = () => {
       style: 'decimal',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(amount) + ' USDT';
+    }).format(amount);
   };
 
   const fetchMlmData = async () => {
@@ -189,9 +200,80 @@ const MLMDashboard = () => {
     }
   };
 
+  const fetchRewardsData = async () => {
+    if (!wallet.isConnected || !wallet.account) {
+      setError('Wallet not connected. Please connect your wallet.');
+      return;
+    }
+
+    if (chainId !== TESTNET_CHAIN_ID) {
+      try {
+        await switchChain({ chainId: TESTNET_CHAIN_ID });
+      } catch (error) {
+        setError('Please switch to BSC Testnet.');
+        return;
+      }
+    }
+
+    try {
+      setIsLoading(true);
+      setError('');
+      setNotRegistered(false);
+
+      const [userInfo, userCapping] = await Promise.all([
+        dwcContractInteractions.getUserInfo(wallet.account),
+        dwcContractInteractions.getUserCapping(wallet.account),
+      ]);
+
+      const [totalDepositBDC] = await Promise.all([
+        dwcContractInteractions.daiToTokens(userInfo.totalDeposit || 0n),
+
+      ]);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('User Info for Rewards:', userInfo);
+      }
+
+      if (!userInfo?.id || userInfo.id === 0n) {
+        setError('User not registered. Please register to view rewards.');
+        setNotRegistered(true);
+        setIsLoading(false);
+        return;
+      }
+
+      setRewardsData({
+        retentionBonus: parseFloat(formatUnits(userInfo?.reward || 0n, 18)) || 0,
+        releasedRetentionBonus: parseFloat(formatUnits((userInfo?.totalreward || 0n) - (userInfo?.totalwithdraw || 0n), 18)) || 0,
+        residualBonus: parseFloat(formatUnits(userInfo?.maturityincome || 0n, 18)) || 0,
+        levelIncome: parseFloat(formatUnits(userInfo?.levelincome || 0n, 18)) || 0,
+        royaltyIncome: parseFloat(formatUnits(userInfo?.royaltyincome || 0n, 18)) || 0,
+        totalIncome: parseFloat(formatUnits(userInfo?.totalreward || 0n, 18)) || 0,
+        totalWithdraw: parseFloat(formatUnits(userInfo?.totalwithdraw || 0n, 18)) || 0,
+        availableToWithdraw: parseFloat(formatUnits(userCapping?.totalCapping || 0n, 18)) - parseFloat(formatUnits(userCapping?.useCapping || 0n, 18)) || 0,
+        totalDeposit: parseFloat(formatUnits(userInfo?.totalDeposit || 0n, 18)) || 0,
+        totalDepositBDC: totalDepositBDC ? parseFloat(formatUnits(totalDepositBDC, 18)) : 0,
+        // bnbBalance: bnbBalance ? parseFloat(formatUnits(bnbBalance.value, 18)) : 0,
+      });
+    } catch (error) {
+      console.error('Error fetching rewards data:', error);
+      let errorMessage = 'Failed to fetch rewards data. Please try again.';
+      if (error.cause?.data) {
+        const decodedError = decodeErrorResult({
+          abi: USDC_ABI,
+          data: error.cause.data,
+        });
+        errorMessage = `Error: ${decodedError.errorName || 'Unknown error'} - ${decodedError.args?.join(', ') || ''}`;
+      }
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (wallet.isConnected && wallet.account) {
       fetchMlmData();
+      fetchRewardsData()
     }
   }, [wallet.isConnected, wallet.account, chainId]);
 
@@ -471,7 +553,7 @@ const MLMDashboard = () => {
   return (
     <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 }, background: 'linear-gradient(135deg, #f0f4ff 0%, #d9e4ff 100%)', minHeight: '100vh' }}>
       {registrationAlert}
-      <Alert severity="success" sx={{ mb: 2 }}>
+      <Alert color="error" sx={{ mb: 2 }} severity="success">
         <Typography variant="body1" >
 
           {mlmData.coinRate ? `Current Coin Rate: ${mlmData.coinRate.toFixed(4)} USDT/BDC` : 'Loading coin rate...'}
@@ -682,7 +764,7 @@ const MLMDashboard = () => {
               Financial Overview
             </Typography>
             <Grid container spacing={2} sx={{ mb: { xs: 3, sm: 4 } }}>
-              <Grid item xs={12} md={4}>
+              <Grid item xs={12} md={6}>
                 <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
                   <CardContent>
                     {/* Header */}
@@ -701,7 +783,7 @@ const MLMDashboard = () => {
                           variant="h5"
                           sx={{ fontWeight: 'bold', color: 'info.main', fontSize: '1.25rem' }}
                         >
-                          {formatCurrency(mlmData?.usdcBalance)}
+                          {formatCurrency(rewardsData?.totalDeposit || 0)}
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
                           USDT
@@ -714,7 +796,7 @@ const MLMDashboard = () => {
                           variant="h5"
                           sx={{ fontWeight: 'bold', color: 'warning.main', fontSize: '1.25rem' }}
                         >
-                          {formatCurrency(mlmData?.dwcBalance)}
+                          {formatDWC(rewardsData?.totalDepositBDC || 0)}
                         </Typography>
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
                           BDC
@@ -725,7 +807,7 @@ const MLMDashboard = () => {
                 </Card>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              {/* <Grid item xs={12} sm={6} md={4}>
                 <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
@@ -742,8 +824,8 @@ const MLMDashboard = () => {
                     </Typography>
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              </Grid> */}
+              {/* <Grid item xs={12} sm={6} md={4}>
                 <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
@@ -814,8 +896,9 @@ const MLMDashboard = () => {
                     </Typography>
                   </CardContent>
                 </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              </Grid> */}
+
+              <Grid item xs={12} sm={6} >
                 <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
@@ -833,7 +916,7 @@ const MLMDashboard = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={6} >
                 <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
@@ -851,7 +934,7 @@ const MLMDashboard = () => {
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} sm={6} >
                 <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
                   <CardContent>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
@@ -868,6 +951,67 @@ const MLMDashboard = () => {
                     </Typography>
                   </CardContent>
                 </Card>
+              </Grid>
+              <Grid item xs={12}>
+
+                <Grid container spacing={2}>
+                  {[
+                    {
+                      icon: <MonetizationOnIcon />,
+                      title: 'Stack Bonus',
+                      value: formatCurrency(rewardsData.retentionBonus),
+                      subtitle: 'Current reward balance (USDC)',
+                      color: 'primary.main',
+                    },
+                    {
+                      icon: <TrendingUpIcon />,
+                      title: 'Released Stack Bonus',
+                      value: formatCurrency(rewardsData.releasedRetentionBonus),
+                      subtitle: 'Total rewards minus withdrawals (USDC)',
+                      color: 'success.main',
+                    },
+                    {
+                      icon: <MonetizationOnIcon />,
+                      title: 'Team Withdrawal Bonus',
+                      value: formatCurrency(rewardsData.residualBonus),
+                      subtitle: 'Maturity income (USDC)',
+                      color: 'warning.main',
+                    },
+                    {
+                      icon: <TrendingUpIcon />,
+                      title: 'Team Referral Bonus',
+                      value: formatCurrency(rewardsData.levelIncome),
+                      subtitle: 'Income from team levels (USDC)',
+                      color: 'info.main',
+                    },
+                    {
+                      icon: <MonetizationOnIcon />,
+                      title: 'Royalty Bonus',
+                      value: formatCurrency(rewardsData.royaltyIncome),
+                      subtitle: 'Royalty earnings (USDC)',
+                      color: 'secondary.main',
+                    },
+                  ].map((card, index) => (
+                    <Grid item xs={12} sm={6} md={4} key={`reward-${index}`}>
+                      <Card sx={{ p: { xs: 1.5, sm: 2 }, boxShadow: 3, height: '100%' }}>
+                        <CardContent>
+                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                            {React.cloneElement(card.icon, { sx: { color: card.color, mr: 1, fontSize: { xs: '1.5rem', sm: '2rem' } } })}
+                            <Typography variant="h6" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                              {card.title}
+                            </Typography>
+                          </Box>
+                          <Typography variant="h4" sx={{ fontWeight: 'bold', color: card.color, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                            {card.value}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                            {card.subtitle}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
               </Grid>
             </Grid>
 
