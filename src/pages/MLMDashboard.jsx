@@ -319,9 +319,9 @@ const MLMDashboard = () => {
         functionName: 'decimals',
         chainId: TESTNET_CHAIN_ID,
       });
-      const approveAmount = parseUnits('1', Number(decimals));
-      const approvalTx = await dwcContractInteractions.approveUSDC(approveAmount, wallet.account);
-      await waitForTransactionReceipt(config, { hash: approvalTx, chainId: TESTNET_CHAIN_ID });
+      // const approveAmount = parseUnits('1', Number(decimals));
+      // const approvalTx = await dwcContractInteractions.approveUSDC(approveAmount, wallet.account);
+      // await waitForTransactionReceipt(config, { hash: approvalTx, chainId: TESTNET_CHAIN_ID });
 
       const refCode = referralCode || '0xA841371376190547E54c8Fa72B0e684191E756c7';
       const registerTx = await dwcContractInteractions.register(refCode, wallet.account);

@@ -1088,7 +1088,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         throw new Error(
           `Deposit amount must be between ${formatEther(
             MIN_DEPOSIT
-          )} and ${formatEther(MAX_DEPOSIT)} DWC`
+          )} and ${formatEther(MAX_DEPOSIT)} BDC`
         );
       }
       const isUserExists = await this.isUserExists(account);
@@ -1100,15 +1100,15 @@ export const dwcContractInteractions: DWCContractInteractions = {
         throw new Error(
           `Deposit amount must be greater than or equal to last deposit: ${formatEther(
             userInfo.lastDeposit
-          )} DWC`
+          )} BDC`
         );
       }
       const balance = await this.getDWCBalance(account);
       if (balance < parsedAmount) {
         throw new Error(
-          `Insufficient DWC balance. Available: ${formatEther(
+          `Insufficient BDC balance. Available: ${formatEther(
             balance
-          )} DWC, Required: ${amount} DWC`
+          )} BDC, Required: ${amount} BDC`
         );
       }
       const allowance = (await readContract(config, {
@@ -1119,7 +1119,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         chainId: TESTNET_CHAIN_ID,
       })) as bigint;
       if (allowance < parsedAmount) {
-        console.log(`Approving ${amount} DWC for DWC contract`);
+        console.log(`Approving ${amount} BDC for BDC contract`);
         const approvalTx = await this.approveDWC(parsedAmount, account);
         await waitForTransactionReceipt(config, {
           hash: approvalTx,
@@ -1149,7 +1149,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
-      console.error(`Error depositing DWC: ${error.message || error}`);
+      console.error(`Error depositing BDC: ${error.message || error}`);
       throw error;
     }
   },
@@ -1165,9 +1165,9 @@ export const dwcContractInteractions: DWCContractInteractions = {
       const balance = await this.getDWCBalance(account);
       if (balance < tokenAmount) {
         throw new Error(
-          `Insufficient DWC balance. Available: ${formatEther(
+          `Insufficient BDC balance. Available: ${formatEther(
             balance
-          )} DWC, Required: ${formatEther(tokenAmount)} DWC`
+          )} BDC, Required: ${formatEther(tokenAmount)} DWC`
         );
       }
       const gasEstimate = await estimateGas(config, {
