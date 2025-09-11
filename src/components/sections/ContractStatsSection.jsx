@@ -141,8 +141,8 @@ const ContractStatsSection = () => {
         user: userRank,
         totalDeposit: parseFloat(formatUnits(userInfo.totalDeposit, 18)),
         maxPayout: parseFloat(formatUnits(maxPayout, 18)),
-        liquidityPoolFund: parseFloat(formatUnits(liquidityPool.daiAmount, 18)),
-        liquidityPoolFundUSDT: parseFloat(formatUnits(liquidityPool.tokenAmount, 18)),
+        liquidityPoolFundUSDT: parseFloat(formatUnits(liquidityPool.daiAmount, 18)),
+        liquidityPoolFund: parseFloat(formatUnits(liquidityPool.tokenAmount, 18)),
         userStatus: userInfo.totalDeposit > 0 ? 'ACTIVE' : 'INACTIVE',
       });
     } catch (error) {
