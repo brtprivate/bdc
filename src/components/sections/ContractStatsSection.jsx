@@ -9,6 +9,8 @@ import {
   Alert,
   IconButton,
   LinearProgress,
+  Container,
+  Backdrop,
 } from '@mui/material';
 import { useWallet } from '../../context/WalletContext';
 import { useChainId, useSwitchChain } from 'wagmi';
@@ -191,16 +193,35 @@ const ContractStatsSection = () => {
     );
   }
 
-  if (isLoading) {
-    return (
-      <Card sx={{ p: 3, boxShadow: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
-        <CircularProgress />
-      </Card>
-    );
-  }
+  // if (isLoading) {
+  //   return (
+  //     <Backdrop
+  //       open={true}
+  //       sx={{
+  //         color: "#fff",
+  //         zIndex: (theme) => theme.zIndex.drawer + 1,
+  //         background: "rgba(0, 0, 0, 0.5)",
+  //       }}
+  //     >
+  //       <CircularProgress color="inherit" />
+  //     </Backdrop>
+  //   );
+  // }
 
   return (
     <Card sx={{ p: 3, boxShadow: 3 }}>
+      {isLoading && (
+        <Backdrop
+          open={true}
+          sx={{
+            color: "#fff",
+            zIndex: (theme) => theme.zIndex.drawer + 1,
+            background: "rgba(0, 0, 0, 0.5)",
+          }}
+        >
+          <CircularProgress color="inherit" />
+        </Backdrop>
+      )}
       <Typography variant="h5" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold', mb: 3 }}>
         Contract Stats & Balances
       </Typography>
@@ -374,6 +395,40 @@ const ContractStatsSection = () => {
             </CardContent>
           </Card>
         </Grid> */}
+        {/* Your Wallet Address */}
+        <Grid item xs={12} sm={6} md={4}>
+          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                <PersonIcon sx={{ color: 'error.main', mr: 1, fontSize: '1.5rem' }} />
+                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+                  Your Wallet Address
+                </Typography>
+              </Box>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'error.main', fontSize: '1rem' }}>
+                {formatAddress(statsData.referralAddress)} <IconButton
+                  onClick={() => {
+                    const refLink = `${statsData.referralAddress}`;
+                    navigator.clipboard.writeText(refLink);
+                    alert("Referral link copied to clipboard!");
+                  }}
+                  sx={{
+                    color: "black",
+
+                    // backgroundColor: "primary.main",
+                    // "&:hover": {
+                    //   opacity: 0.9,
+                    //   backgroundColor: "primary.dark",
+                    // },
+                  }}
+                >
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Typography>
+
+            </CardContent>
+          </Card>
+        </Grid>
 
         <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ p: 2, boxShadow: 2 }}>
@@ -446,6 +501,7 @@ const ContractStatsSection = () => {
             </CardContent>
           </Card>
         </Grid>
+
 
 
 

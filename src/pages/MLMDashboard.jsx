@@ -8,7 +8,9 @@ import {
   Container,
   Grid,
   InputAdornment,
+  MenuItem,
   Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -52,11 +54,12 @@ const MLMDashboard = () => {
   const [success, setSuccess] = useState('');
   const [referralCode, setReferralCode] = useState('');
   const [stakeAmount, setStakeAmount] = useState('');
-  const [depositType, setDepositType] = useState('usdc');
+  const [depositType, setDepositType] = useState('usdt');
   const [notRegistered, setNotRegistered] = useState(false);
   const [showReferralInput, setShowReferralInput] = useState(false);
   const [mlmData, setMlmData] = useState({
     myHolding: 0,
+    myHoldingBdc: 0,
     retentionBonus: 0,
     releasedRetentionBonus: 0,
     residualBonus: 0,
@@ -157,9 +160,11 @@ const MLMDashboard = () => {
 
       console.log('Total Active USDC:', totalActiveUsdc);
       console.log('Calculated My Holding (DWC):', myHolding);
+      // console.log('Calculated My Holding usdt to (DWC):', holdingInDWC);
 
       setMlmData({
-        myHolding: myHolding || 0,
+        myHoldingBdc: myHolding || 0,
+        myHolding: totalActiveUsdc || 0,
         // retentionBonus: parseFloat(formatUnits(bonusInfo.teamGrowthGains || 0n, 18)) || 0,
         // releasedRetentionBonus: parseFloat(formatUnits(bonusInfo.developmentGains || 0n, 18)) || 0,
         // residualBonus: parseFloat(formatUnits(bonusInfo.referralGains || 0n, 18)) || 0,
@@ -466,6 +471,12 @@ const MLMDashboard = () => {
   return (
     <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 }, background: 'linear-gradient(135deg, #f0f4ff 0%, #d9e4ff 100%)', minHeight: '100vh' }}>
       {registrationAlert}
+      <Alert severity="success" sx={{ mb: 2 }}>
+        <Typography variant="body1" >
+
+          {mlmData.coinRate ? `Current Coin Rate: ${mlmData.coinRate.toFixed(4)} USDT/BDC` : 'Loading coin rate...'}
+        </Typography>
+      </Alert>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
           {error}
@@ -526,7 +537,7 @@ const MLMDashboard = () => {
               gutterBottom
               sx={{ color: 'primary.main', fontWeight: 'bold', mb: { xs: 2, sm: 3 }, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
             >
-              Trading & Referrals
+              Stack to Earn More
             </Typography>
 
             {/* Stake Section */}
@@ -543,21 +554,29 @@ const MLMDashboard = () => {
                   type="number"
                   InputProps={{
                     endAdornment: (
-                      <InputAdornment position="end">
-                        <select
+                      <InputAdornment position="end" sx={{ m: 0 }}>
+                        <Select
                           value={depositType}
                           onChange={e => setDepositType(e.target.value)}
-                          style={{ border: 'none', background: 'transparent', fontWeight: 'bold', fontSize: '1rem', outline: 'none', cursor: 'pointer' }}
+                          variant="filled"
+                          disableUnderline
+                          sx={{
+                            minWidth: 60,
+                            ml: 0,
+                            '& .MuiSelect-select': {
+                              padding: '6px 8px',
+                            },
+                          }}
                         >
-                          <option value="usdt">USDT</option>
-                          <option value="bdc">BDC</option>
-                        </select>
+                          <MenuItem value="usdt">USDT</MenuItem>
+                          <MenuItem value="bdc">BDC</MenuItem>
+                        </Select>
                       </InputAdornment>
                     ),
                     inputProps: { min: 50, max: 10000 },
                   }}
-                  sx={{ '& .MuiInputBase-input': { fontSize: { xs: '0.875rem', sm: '1rem' } } }}
                 />
+
                 {/* Converted amount display */}
                 {stakeAmount && !isNaN(Number(stakeAmount)) && (
                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
@@ -582,7 +601,7 @@ const MLMDashboard = () => {
             )}
 
             {/* Referral Code Section */}
-            <Box sx={{ mb: { xs: 3, sm: 4 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {/* <Box sx={{ mb: { xs: 3, sm: 4 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
               <Typography variant="h6" sx={{ color: 'primary.main', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                 Your Referral Code
               </Typography>
@@ -639,7 +658,7 @@ const MLMDashboard = () => {
               <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                 Share this code to earn referral bonuses when friends join and stake!
               </Typography>
-            </Box>
+            </Box> */}
           </Card>
         </Grid>
 
@@ -663,24 +682,49 @@ const MLMDashboard = () => {
               Financial Overview
             </Typography>
             <Grid container spacing={2} sx={{ mb: { xs: 3, sm: 4 } }}>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid item xs={12} md={4}>
                 <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
                   <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                    {/* Header */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                       <AccountBalanceWalletIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.5rem' }} />
-                      <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+                      <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
                         My Holding
                       </Typography>
                     </Box>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', fontSize: '1.25rem' }}>
-                      {formatDWC(mlmData.myHolding)}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
-                      USDT
-                    </Typography>
+
+                    {/* Values Row */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 3 }}>
+                      {/* USDT Holding */}
+                      <Box>
+                        <Typography
+                          variant="h5"
+                          sx={{ fontWeight: 'bold', color: 'info.main', fontSize: '1.25rem' }}
+                        >
+                          {formatCurrency(mlmData?.usdcBalance)}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                          USDT
+                        </Typography>
+                      </Box>
+
+                      {/* BDC Holding */}
+                      <Box>
+                        <Typography
+                          variant="h5"
+                          sx={{ fontWeight: 'bold', color: 'warning.main', fontSize: '1.25rem' }}
+                        >
+                          {formatCurrency(mlmData?.dwcBalance)}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                          BDC
+                        </Typography>
+                      </Box>
+                    </Box>
                   </CardContent>
                 </Card>
               </Grid>
+
               <Grid item xs={12} sm={6} md={4}>
                 <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
                   <CardContent>
@@ -883,7 +927,7 @@ const MLMDashboard = () => {
 
 
       </Grid>
-    </Container>
+    </Container >
   );
 };
 
