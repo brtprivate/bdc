@@ -120,13 +120,13 @@ const SwapPage = () => {
     >
       <Card sx={{ p: 4, borderRadius: 3, boxShadow: 4 }}>
         <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold', textAlign: 'center' }}>
-          Swap BDC → DAI
+          Swap BDC → USDT
         </Typography>
 
         {/* Input: DWC */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            From (DWC)
+            From (BDC)
           </Typography>
           <TextField
             fullWidth
@@ -148,7 +148,7 @@ const SwapPage = () => {
             }}
           />
           <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: 'text.secondary' }}>
-            Balance: {dwcBalance.toFixed(4)} DWC
+            Balance: {dwcBalance.toFixed(4)} BDC
           </Typography>
         </Box>
 
@@ -160,7 +160,7 @@ const SwapPage = () => {
         {/* Output: DAI */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            To (DAI)
+            To (USDT)
           </Typography>
           <TextField
             fullWidth
@@ -200,7 +200,7 @@ const SwapPage = () => {
 
         {parseFloat(dwcAmount) > dwcBalance && (
           <Alert severity="warning" sx={{ mt: 2 }}>
-            Insufficient DWC balance
+            Insufficient BDC balance
           </Alert>
         )}
       </Card>

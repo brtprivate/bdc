@@ -89,7 +89,7 @@ const RewardsPage = () => {
       setRewardsData({
         retentionBonus: parseFloat(formatUnits(userInfo?.reward || 0n, 18)) || 0,
         releasedRetentionBonus: parseFloat(formatUnits((userInfo?.totalreward || 0n) - (userInfo?.totalwithdraw || 0n), 18)) || 0,
-        residualBonus: parseFloat(formatUnits(userInfo?.maturityincome || 0n, 18)) || 0,
+        residualBonus: parseFloat(formatUnits(userInfo?.teamWithdrawal || 0n, 18)) || 0,
         levelIncome: parseFloat(formatUnits(userInfo?.levelincome || 0n, 18)) || 0,
         royaltyIncome: parseFloat(formatUnits(userInfo?.royaltyincome || 0n, 18)) || 0,
         totalIncome: parseFloat(formatUnits(userInfo?.totalreward || 0n, 18)) || 0,

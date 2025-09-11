@@ -378,6 +378,7 @@ const MLMDashboard = () => {
         setError('Please enter a valid stake amount.');
         return;
       }
+
       debugger
       if (depositType === 'bdc') {
         const _amount = (Number(amount) * (mlmData.coinRate || 1)).toFixed(4)
@@ -396,14 +397,17 @@ const MLMDashboard = () => {
       if (depositType === 'bdc') {
         const txHash = await dwcContractInteractions.depositDWC(amount, wallet.account);
         await waitForTransactionReceipt(config, { hash: txHash, chainId: TESTNET_CHAIN_ID });
+        setSuccess(`Successfully staked ${amount} USDC! Transaction: ${txHash}`);
+
 
       } else {
 
         const txHash = await dwcContractInteractions.deposit(amount, wallet.account);
         await waitForTransactionReceipt(config, { hash: txHash, chainId: TESTNET_CHAIN_ID });
+        setSuccess(`Successfully staked ${amount} USDC! Transaction: ${txHash}`);
+
       }
 
-      setSuccess(`Successfully staked ${amount} USDC! Transaction: ${txHash}`);
       setStakeAmount('');
       setTimeout(fetchMlmData, 3000);
     } catch (error) {
@@ -960,35 +964,35 @@ const MLMDashboard = () => {
                       icon: <MonetizationOnIcon />,
                       title: 'Stack Bonus',
                       value: formatCurrency(rewardsData.retentionBonus),
-                      subtitle: 'Current reward balance (USDC)',
+                      subtitle: 'Current reward balance (USDT)',
                       color: 'primary.main',
                     },
                     {
                       icon: <TrendingUpIcon />,
                       title: 'Released Stack Bonus',
                       value: formatCurrency(rewardsData.releasedRetentionBonus),
-                      subtitle: 'Total rewards minus withdrawals (USDC)',
+                      subtitle: 'Total rewards minus withdrawals (USDT)',
                       color: 'success.main',
                     },
                     {
                       icon: <MonetizationOnIcon />,
                       title: 'Team Withdrawal Bonus',
                       value: formatCurrency(rewardsData.residualBonus),
-                      subtitle: 'Maturity income (USDC)',
+                      subtitle: 'Maturity income (USDT)',
                       color: 'warning.main',
                     },
                     {
                       icon: <TrendingUpIcon />,
                       title: 'Team Referral Bonus',
                       value: formatCurrency(rewardsData.levelIncome),
-                      subtitle: 'Income from team levels (USDC)',
+                      subtitle: 'Income from team levels (USDT)',
                       color: 'info.main',
                     },
                     {
                       icon: <MonetizationOnIcon />,
                       title: 'Royalty Bonus',
                       value: formatCurrency(rewardsData.royaltyIncome),
-                      subtitle: 'Royalty earnings (USDC)',
+                      subtitle: 'Royalty earnings (USDT)',
                       color: 'secondary.main',
                     },
                   ].map((card, index) => (
