@@ -240,7 +240,7 @@ const RewardsPage = () => {
             My Rewards
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
-            View all your rewards and earnings in USDC
+            View all your rewards and earnings in USDT
           </Typography>
         </Box>
         <Button
@@ -265,35 +265,35 @@ const RewardsPage = () => {
                 icon: <MonetizationOnIcon />,
                 title: 'Stack Bonus',
                 value: formatCurrency(rewardsData.retentionBonus),
-                subtitle: 'Current reward balance (USDC)',
+                subtitle: 'Current reward balance (USDT)',
                 color: 'primary.main',
               },
               {
                 icon: <TrendingUpIcon />,
                 title: 'Released Stack Bonus',
                 value: formatCurrency(rewardsData.releasedRetentionBonus),
-                subtitle: 'Total rewards minus withdrawals (USDC)',
+                subtitle: 'Total rewards minus withdrawals (USDT)',
                 color: 'success.main',
               },
               {
                 icon: <MonetizationOnIcon />,
                 title: 'Team Withdrawal Bonus',
                 value: formatCurrency(rewardsData.residualBonus),
-                subtitle: 'Maturity income (USDC)',
+                subtitle: 'Maturity income (USDT)',
                 color: 'warning.main',
               },
               {
                 icon: <TrendingUpIcon />,
                 title: 'Team Referral Bonus',
                 value: formatCurrency(rewardsData.levelIncome),
-                subtitle: 'Income from team levels (USDC)',
+                subtitle: 'Income from team levels (USDT)',
                 color: 'info.main',
               },
               {
                 icon: <MonetizationOnIcon />,
                 title: 'Royalty Bonus',
                 value: formatCurrency(rewardsData.royaltyIncome),
-                subtitle: 'Royalty earnings (USDC)',
+                subtitle: 'Royalty earnings (USDT)',
                 color: 'secondary.main',
               },
             ].map((card, index) => (
@@ -335,7 +335,7 @@ const RewardsPage = () => {
                       {formatCurrency(rewardsData.totalIncome - rewardsData.totalWithdraw)}
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.8, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                      Total Income minus Total Withdrawn (USDC)
+                      Total Income minus Total Withdrawn (USDT)
                     </Typography>
                   </Box>
                   <Button
@@ -380,7 +380,7 @@ const RewardsPage = () => {
               <TableHead>
                 <TableRow sx={{ backgroundColor: 'primary.main' }}>
                   <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem' }}>Income Type</TableCell>
-                  <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem' }} align="right">Amount (USDC)</TableCell>
+                  <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem' }} align="right">Amount (USDT)</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
