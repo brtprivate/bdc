@@ -32,6 +32,8 @@ import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import { useMLM } from "../context/MLMContext";
 import { useWallet } from "../context/WalletContext";
 import Logo from "./common/Logo";
+import { dwcContractInteractions } from "../services/contractService";
+import { formatUnits } from "viem";
 
 interface NavbarProps {
   selectedSection?: string;
@@ -48,6 +50,7 @@ const Navbar: React.FC<NavbarProps> = ({
   const { open } = useWeb3Modal();
   const { open: isModalOpen } = useWeb3ModalState();
   const navigate = useNavigate();
+  const [cointRate, setCointRate] = useState(0);
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -69,7 +72,8 @@ const Navbar: React.FC<NavbarProps> = ({
         try {
           console.log("Navbar: Triggering user existence check");
           const isRegistered = await mlm.checkMLMRegistration();
-          console.log("Navbar: User existence check result:", isRegistered);
+          const _coinrate = await dwcContractInteractions.getCoinRate();
+          setCointRate(parseFloat(formatUnits(_coinrate, 18)) || 1);
         } catch (error) {
           console.error("Navbar: Error checking user existence:", error);
           // Try again after a longer delay
@@ -143,6 +147,22 @@ const Navbar: React.FC<NavbarProps> = ({
   return (
     <>
       <AppBar position="sticky" sx={appBarStyle} elevation={0}>
+        {/* make a banner red */}
+        <Box
+          sx={{
+            width: "100%",
+            backgroundColor: "#D32F2F",
+            textAlign: "center",
+            py: 0.5,
+          }}
+        >
+          <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
+            {cointRate
+              ? `Current Coin Rate: ${cointRate.toFixed(4)} USDT/BDC`
+              : "Loading coin rate..."}
+          </Typography>
+        </Box>
+
         <Container maxWidth="lg" sx={{ px: { xs: 0.25, sm: 0.5, md: 1 } }}>
           <Toolbar disableGutters sx={{ minHeight: { xs: 90, sm: 100 } }}>
             {/* Logo */}

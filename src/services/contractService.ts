@@ -616,7 +616,7 @@ interface UserInfo {
   directBusiness: bigint;
   reward: bigint;
   levelincome: bigint;
-  roraltyincome: bigint;
+  royaltyincome: bigint;
   maturityincome: bigint;
   totalreward: bigint;
   totalwithdraw: bigint;
@@ -1709,7 +1709,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         directBusiness: result[6],
         reward: result[7],
         levelincome: result[8],
-        roraltyincome: result[9],
+        royaltyincome: result[9],
         maturityincome: result[10],
         totalreward: result[11],
         totalwithdraw: result[12],
@@ -1902,7 +1902,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
   },
 
   async tokensToDai(tokenAmount: bigint): Promise<bigint> {
-    console.log("🚀 ~ tokensToDai ~ tokenAmount:", tokenAmount)
+    console.log("🚀 ~ tokensToDai ~ tokenAmount:", tokenAmount);
     try {
       const daiAmount = (await readContract(config, {
         abi: DWC_ABI,

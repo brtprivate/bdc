@@ -64,6 +64,7 @@ const ContractStatsSection = () => {
 
   // Helper function to get rank label
   const getRankLabel = (rank) => {
+    console.log("🚀 ~ getRankLabel ~ rank:", rank)
     switch (Number(rank)) {
       case 0: return 'Holder';
       case 1: return 'Expert';
@@ -137,7 +138,7 @@ const ContractStatsSection = () => {
         totalSupply: parseFloat(formatUnits(totalSupply, 18)),
         burnedTokens: parseFloat(formatUnits(burnedTokens, 18)),
         lastUserId: Number(lastUserId),
-        userRank: getRankLabel(userRank.rank),
+        userRank: getRankLabel(Number(userRank.rank) - 1),
         user: userRank,
         totalDeposit: parseFloat(formatUnits(userInfo.totalDeposit, 18)),
         maxPayout: parseFloat(formatUnits(maxPayout, 18)),
@@ -433,7 +434,7 @@ const ContractStatsSection = () => {
             </CardContent>
           </Card>
         </Grid>
-      
+
 
 
         {/* Referral Address */}

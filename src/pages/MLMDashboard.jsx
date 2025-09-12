@@ -59,6 +59,8 @@ const MLMDashboard = () => {
   const [showReferralInput, setShowReferralInput] = useState(false);
   const [mlmData, setMlmData] = useState({
     myHolding: 0,
+    bdcBalance: 0,
+    usdtBalance: 0,
     myHoldingBdc: 0,
     retentionBonus: 0,
     releasedRetentionBonus: 0,
@@ -176,11 +178,13 @@ const MLMDashboard = () => {
       setMlmData({
         myHoldingBdc: myHolding || 0,
         myHolding: totalActiveUsdc || 0,
+        bdcBalance: parseFloat(formatUnits(dwcBalanceRaw, 18)) || 0,
+        usdtBalance: parseFloat(formatUnits(usdcBalanceRaw, 18)) || 0,
         // retentionBonus: parseFloat(formatUnits(bonusInfo.teamGrowthGains || 0n, 18)) || 0,
         // releasedRetentionBonus: parseFloat(formatUnits(bonusInfo.developmentGains || 0n, 18)) || 0,
         // residualBonus: parseFloat(formatUnits(bonusInfo.referralGains || 0n, 18)) || 0,
         levelIncome: parseFloat(formatUnits(userInfo?.levelincome || 0n, 18)) || 0,
-        royaltyIncome: parseFloat(formatUnits(userInfo?.roraltyincome || 0n, 18)) || 0,
+        royaltyIncome: parseFloat(formatUnits(userInfo?.royaltyincome || 0n, 18)) || 0,
         totalIncome: parseFloat(formatUnits(userInfo?.totalreward || 0n, 18)) || 0,
         totalWithdraw: parseFloat(formatUnits(userInfo?.totalwithdraw || 0n, 18)) || 0,
         partnersCount: Number(userInfo?.partnersCount) || 0,
@@ -379,35 +383,39 @@ const MLMDashboard = () => {
         return;
       }
 
-      debugger
+      let stakeInUSDT = 0;
+
       if (depositType === 'bdc') {
-        const _amount = (Number(amount) * (mlmData.coinRate || 1)).toFixed(4)
-        if (Number(_amount) < 50 || Number(_amount) > 10000) {
-          setError('Stake amount must be between 50 and 10,000 USDC.');
+        stakeInUSDT = Number(amount) * (mlmData.coinRate || 1);
+        if (Number(amount) > mlmData.bdcBalance) {
+          setError('Insufficient BDC balance.');
           return;
         }
       } else {
-        if (Number(amount) < 50 || Number(amount) > 10000) {
-          setError('Stake amount must be between 50 and 10,000 USDC.');
+        stakeInUSDT = Number(amount);
+        if (Number(amount) > mlmData.usdtBalance) {
+          setError('Insufficient USDT balance.');
           return;
         }
       }
 
-
-      if (depositType === 'bdc') {
-        const txHash = await dwcContractInteractions.depositDWC(amount, wallet.account);
-        await waitForTransactionReceipt(config, { hash: txHash, chainId: TESTNET_CHAIN_ID });
-        setSuccess(`Successfully staked ${amount} USDC! Transaction: ${txHash}`);
-
-
-      } else {
-
-        const txHash = await dwcContractInteractions.deposit(amount, wallet.account);
-        await waitForTransactionReceipt(config, { hash: txHash, chainId: TESTNET_CHAIN_ID });
-        setSuccess(`Successfully staked ${amount} USDC! Transaction: ${txHash}`);
-
+      if (stakeInUSDT < 50 || stakeInUSDT > 10000) {
+        setError('Stake must be between 50 and 10,000 USDT (equivalent).');
+        return;
       }
 
+      // --- TX handling ---
+      const txHash =
+        depositType === 'bdc'
+          ? await dwcContractInteractions.depositDWC(amount, wallet.account)
+          : await dwcContractInteractions.deposit(amount, wallet.account);
+
+      await waitForTransactionReceipt(config, {
+        hash: txHash,
+        chainId: TESTNET_CHAIN_ID,
+      });
+
+      setSuccess(`Successfully staked ${amount} ${depositType.toUpperCase()}! TX: ${txHash}`);
       setStakeAmount('');
       setTimeout(fetchMlmData, 3000);
     } catch (error) {
@@ -415,7 +423,7 @@ const MLMDashboard = () => {
       if (error.message?.includes('User rejected')) {
         setError('Transaction was cancelled by user');
       } else if (error.message?.includes('insufficient')) {
-        setError('Insufficient USDC balance or BNB for gas fees.');
+        setError('Insufficient balance or BNB for gas fees.');
       } else if (error.message?.includes('not registered')) {
         setError('You must be registered to stake.');
       } else {
@@ -425,6 +433,7 @@ const MLMDashboard = () => {
       setIsLoading(false);
     }
   };
+
 
   const handleWithdrawReward = async (index) => {
     if (!wallet.isConnected || !wallet.account) {
@@ -557,12 +566,7 @@ const MLMDashboard = () => {
   return (
     <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 }, background: 'linear-gradient(135deg, #f0f4ff 0%, #d9e4ff 100%)', minHeight: '100vh' }}>
       {registrationAlert}
-      <Alert color="error" sx={{ mb: 2 }} severity="success">
-        <Typography variant="body1" >
 
-          {mlmData.coinRate ? `Current Coin Rate: ${mlmData.coinRate.toFixed(4)} USDT/BDC` : 'Loading coin rate...'}
-        </Typography>
-      </Alert>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError('')}>
           {error}
@@ -628,30 +632,50 @@ const MLMDashboard = () => {
 
             {/* Stake Section */}
             {!notRegistered && (
-              <Box sx={{ mb: { xs: 3, sm: 4 }, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Typography variant="h6" sx={{ color: 'primary.main', fontSize: { xs: '1rem', sm: '1.25rem' } }}>
-                  Stake USDT
+              <Box
+                sx={{
+                  mb: { xs: 3, sm: 4 },
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
+                  p: 2,
+                  borderRadius: 2,
+                  bgcolor: 'background.paper',
+                  boxShadow: 2,
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: 'primary.main',
+                    fontSize: { xs: '1rem', sm: '1.25rem' },
+                    fontWeight: 'bold',
+                  }}
+                >
+                  Stake USDT / BDC
                 </Typography>
+
                 <TextField
                   fullWidth
                   label="Amount to Stake"
                   value={stakeAmount}
                   onChange={(e) => setStakeAmount(e.target.value)}
                   type="number"
+                  error={!!error}
+                  helperText={error}
                   InputProps={{
                     endAdornment: (
                       <InputAdornment position="end" sx={{ m: 0 }}>
                         <Select
                           value={depositType}
-                          onChange={e => setDepositType(e.target.value)}
+                          onChange={(e) => setDepositType(e.target.value)}
                           variant="filled"
                           disableUnderline
                           sx={{
-                            minWidth: 60,
+                            minWidth: 70,
                             ml: 0,
-                            '& .MuiSelect-select': {
-                              padding: '6px 8px',
-                            },
+                            fontSize: '0.875rem',
+                            '& .MuiSelect-select': { py: 0.5, px: 1 },
                           }}
                         >
                           <MenuItem value="usdt">USDT</MenuItem>
@@ -659,31 +683,101 @@ const MLMDashboard = () => {
                         </Select>
                       </InputAdornment>
                     ),
-                    inputProps: { min: 50, max: 10000 },
                   }}
                 />
 
                 {/* Converted amount display */}
                 {stakeAmount && !isNaN(Number(stakeAmount)) && (
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}
+                  >
                     {depositType === 'usdt'
-                      ? `= ${(Number(stakeAmount) / (mlmData.coinRate || 1)).toFixed(4)} BDC`
-                      : `= ${(Number(stakeAmount) * (mlmData.coinRate || 1)).toFixed(4)} USDT`}
+                      ? `≈ ${(Number(stakeAmount) / (mlmData.coinRate || 1)).toFixed(4)} BDC`
+                      : `≈ ${(Number(stakeAmount) * (mlmData.coinRate || 1)).toFixed(4)} USDT`}
                   </Typography>
                 )}
+
+                {/* Balance cards */}
+                {/* Balance cards */}
+                <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                  <Box
+                    sx={{
+                      flex: 1,
+                      minWidth: 120,
+                      p: 1.5,
+                      borderRadius: 2,
+                      border: depositType === 'bdc' ? '2px solid' : '1px solid',
+                      borderColor: depositType === 'bdc' ? 'primary.main' : 'divider',
+                      bgcolor: 'background.default',
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', mb: 0.5 }}
+                    >
+                      BDC Balance
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      fontWeight="bold"
+                      sx={{ fontSize: { xs: '0.9rem', sm: '1rem' }, wordBreak: 'break-word' }}
+                    >
+                      {mlmData?.bdcBalance.toFixed(4)} BDC
+                    </Typography>
+                  </Box>
+
+                  <Box
+                    sx={{
+                      flex: 1,
+                      minWidth: 120,
+                      p: 1.5,
+                      borderRadius: 2,
+                      border: depositType === 'usdt' ? '2px solid' : '1px solid',
+                      borderColor: depositType === 'usdt' ? 'primary.main' : 'divider',
+                      bgcolor: 'background.default',
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', mb: 0.5 }}
+                    >
+                      USDT Balance
+                    </Typography>
+                    <Typography
+                      variant="body1"
+                      fontWeight="bold"
+                      sx={{ fontSize: { xs: '0.9rem', sm: '1rem' }, wordBreak: 'break-word' }}
+                    >
+                      {mlmData?.usdtBalance.toFixed(4)} USDT
+                    </Typography>
+                  </Box>
+                </Box>
+
+
                 <Button
                   variant="contained"
                   startIcon={<LocalAtmIcon />}
                   onClick={handleStake}
                   disabled={isLoading || !stakeAmount}
-                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  sx={{ fontSize: { xs: '0.875rem', sm: '1rem' }, mt: 1 }}
                 >
                   Stake Now
                 </Button>
-                <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                  Stake between 50 and 10,000 USDT. Current coin rate: {mlmData.coinRate.toFixed(4)} USDT/BDC
+
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, mt: 1 }}
+                >
+                  Stake between 50 and 10,000 USDT. Current coin rate:{" "}
+                  {mlmData.coinRate.toFixed(4)} USDT/BDC
                 </Typography>
               </Box>
+
             )}
 
             {/* Referral Code Section */}
@@ -795,7 +889,7 @@ const MLMDashboard = () => {
                       </Box>
 
                       {/* BDC Holding */}
-                      <Box>
+                      {/* <Box>
                         <Typography
                           variant="h5"
                           sx={{ fontWeight: 'bold', color: 'warning.main', fontSize: '1.25rem' }}
@@ -805,7 +899,7 @@ const MLMDashboard = () => {
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
                           BDC
                         </Typography>
-                      </Box>
+                      </Box> */}
                     </Box>
                   </CardContent>
                 </Card>
@@ -969,7 +1063,7 @@ const MLMDashboard = () => {
                     },
                     {
                       icon: <TrendingUpIcon />,
-                      title: 'Released Stack Bonus',
+                      title: 'Unclaimed Stack Bonus',
                       value: formatCurrency(rewardsData.releasedRetentionBonus),
                       subtitle: 'Total rewards minus withdrawals (USDT)',
                       color: 'success.main',
