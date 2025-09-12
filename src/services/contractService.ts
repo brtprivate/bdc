@@ -26,13 +26,13 @@ import {
 export { USDC_ABI };
 // Contract configuration - BSC Testnet
 export const DWC_CONTRACT_ADDRESS =
-  "0x31D212164eEE8ac67F4E0D1a5AB722410b6f2920" as Address;
+  "0x5A615edDa19368a33aE90cc5eFA47D4bdB4A653b" as Address;
 export const TESTNET_CHAIN_ID = 97;
 
 // DWC Contract ABI (as provided)
 export const DWC_ABI = [
   {
-    inputs: [{ internalType: "address", name: "_usdtAddr", type: "address" }],
+    inputs: [{ internalType: "address", name: "_daiAddr", type: "address" }],
     stateMutability: "nonpayable",
     type: "constructor",
   },
@@ -193,17 +193,17 @@ export const DWC_ABI = [
     type: "function",
   },
   {
-    inputs: [
-      { internalType: "uint256", name: "_tokenAmount", type: "uint256" },
-    ],
-    name: "_tokensToUsdt",
+    inputs: [{ internalType: "uint256", name: "_daiamount", type: "uint256" }],
+    name: "_daiToTokens",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
   },
   {
-    inputs: [{ internalType: "uint256", name: "_usdtamount", type: "uint256" }],
-    name: "_usdtToTokens",
+    inputs: [
+      { internalType: "uint256", name: "_tokenAmount", type: "uint256" },
+    ],
+    name: "_tokensTodai",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
@@ -270,6 +270,13 @@ export const DWC_ABI = [
     inputs: [],
     name: "creator",
     outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "dai",
+    outputs: [{ internalType: "contract IERC20", name: "", type: "address" }],
     stateMutability: "view",
     type: "function",
   },
@@ -372,14 +379,14 @@ export const DWC_ABI = [
   },
   {
     inputs: [],
-    name: "liquidityPool_tokenAmount",
+    name: "liquidityPool_daiAmount",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
   },
   {
     inputs: [],
-    name: "liquidityPool_usdtAmount",
+    name: "liquidityPool_tokenAmount",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
@@ -427,11 +434,11 @@ export const DWC_ABI = [
     name: "orderInfos",
     outputs: [
       { internalType: "uint256", name: "amount", type: "uint256" },
-      { internalType: "uint256", name: "releaseStackBonus", type: "uint256" },
+      { internalType: "uint256", name: "holdingbonus", type: "uint256" },
       { internalType: "uint256", name: "deposit_time", type: "uint256" },
       { internalType: "uint256", name: "reward_time", type: "uint256" },
       { internalType: "bool", name: "isactive", type: "bool" },
-      { internalType: "bool", name: "isUsdt", type: "bool" },
+      { internalType: "bool", name: "isdai", type: "bool" },
     ],
     stateMutability: "view",
     type: "function",
@@ -456,16 +463,6 @@ export const DWC_ABI = [
     inputs: [{ internalType: "uint256", name: "rewardindex", type: "uint256" }],
     name: "rewardWithdraw",
     outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      { internalType: "address", name: "_user", type: "address" },
-      { internalType: "uint256", name: "rewardindex", type: "uint256" },
-    ],
-    name: "stackBonus",
-    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "nonpayable",
     type: "function",
   },
@@ -557,13 +554,6 @@ export const DWC_ABI = [
     type: "function",
   },
   {
-    inputs: [],
-    name: "usdt",
-    outputs: [{ internalType: "contract IERC20", name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
     inputs: [{ internalType: "address", name: "", type: "address" }],
     name: "userranks",
     outputs: [{ internalType: "uint256", name: "rank", type: "uint256" }],
@@ -584,7 +574,7 @@ export const DWC_ABI = [
       { internalType: "uint256", name: "reward", type: "uint256" },
       { internalType: "uint256", name: "levelincome", type: "uint256" },
       { internalType: "uint256", name: "roraltyincome", type: "uint256" },
-      { internalType: "uint256", name: "teamWithdrawal", type: "uint256" },
+      { internalType: "uint256", name: "maturityincome", type: "uint256" },
       { internalType: "uint256", name: "totalreward", type: "uint256" },
       { internalType: "uint256", name: "totalwithdraw", type: "uint256" },
       { internalType: "uint256", name: "dayRewardPercents", type: "uint256" },
@@ -1088,7 +1078,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         throw new Error(
           `Deposit amount must be between ${formatEther(
             MIN_DEPOSIT
-          )} and ${formatEther(MAX_DEPOSIT)} BDC`
+          )} and ${formatEther(MAX_DEPOSIT)} DWC`
         );
       }
       const isUserExists = await this.isUserExists(account);
@@ -1100,15 +1090,15 @@ export const dwcContractInteractions: DWCContractInteractions = {
         throw new Error(
           `Deposit amount must be greater than or equal to last deposit: ${formatEther(
             userInfo.lastDeposit
-          )} BDC`
+          )} DWC`
         );
       }
       const balance = await this.getDWCBalance(account);
       if (balance < parsedAmount) {
         throw new Error(
-          `Insufficient BDC balance. Available: ${formatEther(
+          `Insufficient DWC balance. Available: ${formatEther(
             balance
-          )} BDC, Required: ${amount} BDC`
+          )} DWC, Required: ${amount} DWC`
         );
       }
       const allowance = (await readContract(config, {
@@ -1119,7 +1109,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         chainId: TESTNET_CHAIN_ID,
       })) as bigint;
       if (allowance < parsedAmount) {
-        console.log(`Approving ${amount} BDC for BDC contract`);
+        console.log(`Approving ${amount} DWC for DWC contract`);
         const approvalTx = await this.approveDWC(parsedAmount, account);
         await waitForTransactionReceipt(config, {
           hash: approvalTx,
@@ -1149,7 +1139,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
-      console.error(`Error depositing BDC: ${error.message || error}`);
+      console.error(`Error depositing DWC: ${error.message || error}`);
       throw error;
     }
   },
@@ -1165,9 +1155,9 @@ export const dwcContractInteractions: DWCContractInteractions = {
       const balance = await this.getDWCBalance(account);
       if (balance < tokenAmount) {
         throw new Error(
-          `Insufficient BDC balance. Available: ${formatEther(
+          `Insufficient DWC balance. Available: ${formatEther(
             balance
-          )} BDC, Required: ${formatEther(tokenAmount)} DWC`
+          )} DWC, Required: ${formatEther(tokenAmount)} DWC`
         );
       }
       const gasEstimate = await estimateGas(config, {
@@ -1893,7 +1883,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
       const tokenAmount = (await readContract(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
-        functionName: "_usdtToTokens",
+        functionName: "_daiToTokens",
         args: [daiAmount],
         chainId: TESTNET_CHAIN_ID,
       })) as bigint;
@@ -1912,12 +1902,12 @@ export const dwcContractInteractions: DWCContractInteractions = {
   },
 
   async tokensToDai(tokenAmount: bigint): Promise<bigint> {
-    console.log("🚀 ~ tokensToDai ~ tokenAmount:", tokenAmount);
+    console.log("🚀 ~ tokensToDai ~ tokenAmount:", tokenAmount)
     try {
       const daiAmount = (await readContract(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
-        functionName: "_tokensToUsdt",
+        functionName: "_tokensTodai",
         args: [tokenAmount],
         chainId: TESTNET_CHAIN_ID,
       })) as bigint;
@@ -1983,7 +1973,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         readContract(config, {
           abi: DWC_ABI,
           address: DWC_CONTRACT_ADDRESS,
-          functionName: "liquidityPool_usdtAmount",
+          functionName: "liquidityPool_daiAmount",
           chainId: TESTNET_CHAIN_ID,
         }) as Promise<bigint>,
       ]);
