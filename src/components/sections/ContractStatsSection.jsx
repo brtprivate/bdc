@@ -361,28 +361,48 @@ const ContractStatsSection = () => {
             </CardContent>
           </Card>
         </Grid>
+        {/* this */}
         <Grid item xs={12} sm={6} md={6}>
           <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
             <CardContent>
               {/* Header */}
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <PoolIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.5rem' }} />
+                <BarChartIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.5rem' }} />
                 <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
                   Liquidity Pool Fund
                 </Typography>
               </Box>
 
               {/* Values Row */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: { xs: "flex-start", sm: "space-between" },
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: { xs: "flex-start", sm: "center" },
+                  gap: { xs: 1.5, sm: 3 },
+                  flexWrap: "wrap",
+                  width: "100%",
+                }}
+              >
                 {/* BDC */}
                 <Box>
                   <Typography
                     variant="h5"
-                    sx={{ fontWeight: 'bold', color: 'primary.main', fontSize: '1.25rem' }}
+                    sx={{
+                      fontWeight: "bold",
+                      color: "warning.main",
+                      fontSize: { xs: "1rem", sm: "1.25rem" }, // smaller on mobile
+                      wordBreak: "break-word",
+                    }}
                   >
                     {formatDWC(statsData.liquidityPoolFund)}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: "0.75rem", sm: "0.8rem" } }}
+                  >
                     BDC
                   </Typography>
                 </Box>
@@ -391,18 +411,29 @@ const ContractStatsSection = () => {
                 <Box>
                   <Typography
                     variant="h5"
-                    sx={{ fontWeight: 'bold', color: 'secondary.main', fontSize: '1.25rem' }}
+                    sx={{
+                      fontWeight: "bold",
+                      color: "info.main",
+                      fontSize: { xs: "1rem", sm: "1.25rem" },
+                      wordBreak: "break-word",
+                    }}
                   >
                     ${formatDWC(statsData?.liquidityPoolFundUSDT)}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ fontSize: { xs: "0.75rem", sm: "0.8rem" } }}
+                  >
                     USDT
                   </Typography>
                 </Box>
               </Box>
+
             </CardContent>
           </Card>
         </Grid>
+      
 
 
         {/* Referral Address */}
