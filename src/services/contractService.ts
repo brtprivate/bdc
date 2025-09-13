@@ -785,7 +785,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [DWC_CONTRACT_ADDRESS, amount],
         chain: bscTestnet,
         account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
@@ -820,7 +820,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [DWC_CONTRACT_ADDRESS, amount],
         chain: bscTestnet,
         account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
@@ -952,7 +952,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [referrer],
         chain: bscTestnet,
         account,
-        gas: finalGasLimit,
+        // gas: finalGasLimit,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
@@ -1103,6 +1103,11 @@ export const dwcContractInteractions: DWCContractInteractions = {
           )} BDC, Required: ${amount} BDC`
         );
       }
+      const walletClient = await getWalletClient(config);
+      if (!walletClient) {
+        throw new Error("Wallet not connected");
+      }
+
       const allowance = (await readContract(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
@@ -1110,14 +1115,14 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [account, DWC_CONTRACT_ADDRESS],
         chainId: TESTNET_CHAIN_ID,
       })) as bigint;
-      if (allowance < parsedAmount) {
-        console.log(`Approving ${amount} DWC for DWC contract`);
-        const approvalTx = await this.approveDWC(parsedAmount, account);
-        await waitForTransactionReceipt(config, {
-          hash: approvalTx,
-          chainId: TESTNET_CHAIN_ID,
-        });
-      }
+      // if (allowance < parsedAmount) {
+      // console.log(`Approving ${amount} DWC for DWC contract`);
+      // const approvalTx = await this.approveDWC(parsedAmount, account);
+      // await waitForTransactionReceipt(config, {
+      //   hash: approvalTx,
+      //   chainId: TESTNET_CHAIN_ID,
+      // });
+      // }
       const gasEstimate = await estimateGas(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
@@ -1133,7 +1138,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [parsedAmount],
         chain: bscTestnet,
         account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
@@ -1319,7 +1324,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [amount, account],
         chain: bscTestnet,
         account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
@@ -1370,7 +1375,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [to, value],
         chain: bscTestnet,
         account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
@@ -1416,7 +1421,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [from, to, value],
         chain: bscTestnet,
         account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
@@ -1459,7 +1464,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [userAddress, referrerAddress],
         chain: bscTestnet,
         account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
@@ -1494,7 +1499,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [creator],
         chain: bscTestnet,
         account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
@@ -1532,7 +1537,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [dayRewardPercents],
         chain: bscTestnet,
         account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
@@ -1570,7 +1575,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [iswithdraw],
         chain: bscTestnet,
         account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
@@ -1611,7 +1616,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [user, dayRewardPercents],
         chain: bscTestnet,
         account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
@@ -1652,7 +1657,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [user, iswithdraw],
         chain: bscTestnet,
         account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
