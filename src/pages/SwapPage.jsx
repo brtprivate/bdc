@@ -11,6 +11,7 @@ import {
   CircularProgress,
   Grid,
   Paper,
+  Link,
 } from '@mui/material';
 import { useWallet } from '../context/WalletContext';
 import { dwcContractInteractions } from '../services/contractService';
@@ -26,6 +27,7 @@ const SwapPage = () => {
   const [usdtBalance, setUsdtBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState("");
   const [isApproving, setIsApproving] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
 
@@ -87,8 +89,9 @@ const SwapPage = () => {
     try {
       const amount = parseUnits(dwcAmount, 18);
       console.log("🚀 ~ handleSwap ~ amount:", amount)
-      await dwcContractInteractions.tokenSwapv2(amount, wallet.account);
-      setError('Swap successful');
+      const txHash = await dwcContractInteractions.tokenSwapv2(amount, wallet.account);
+      setSuccessMessage(txHash);
+
       setDwcAmount('');
       setDaiAmount('');
       fetchBalance();
@@ -180,6 +183,27 @@ const SwapPage = () => {
         {error && (
           <Alert severity={error.includes('successful') ? 'success' : 'error'} sx={{ mb: 2 }}>
             {error}
+          </Alert>
+        )}
+        {successMessage && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            Successfully withdrawn reward! Transaction:
+            <a href={`https://testnet.bscscan.com/tx/${successMessage}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: '#1976d2', textDecoration: 'underline' }}>
+              {`${successMessage.slice(0, 6)}...${successMessage.slice(-4)}`}
+            </a>
+          </Alert>
+        )}
+
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {/* <Button
+            variant="outlined"
+            fullWidth
+            onClick={handleApprove}
+            disabled={isApproving || !dwcAmount}
+            </a>`
           </Alert>
         )}
 
