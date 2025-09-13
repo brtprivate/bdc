@@ -1,12 +1,13 @@
 import {
   estimateGas,
+  getWalletClient,
   readContract,
   waitForTransactionReceipt,
   writeContract,
 } from "@wagmi/core";
 import { ethers } from "ethers";
 
-import type { Address } from "viem";
+import type { Address, Address } from "viem";
 import {
   decodeErrorResult,
   formatEther,
@@ -1094,7 +1095,8 @@ export const dwcContractInteractions: DWCContractInteractions = {
         );
       }
       const balance = await this.getDWCBalance(account);
-      if (balance < parsedAmount) {
+      const _inUsd = await this.daiToTokens(parsedAmount);
+      if (balance < _inUsd) {
         throw new Error(
           `Insufficient DWC balance. Available: ${formatEther(
             balance
@@ -1149,45 +1151,36 @@ export const dwcContractInteractions: DWCContractInteractions = {
     account: Address
   ): Promise<`0x${string}`> {
     try {
-      console.log(
-        `Swapping ${formatEther(tokenAmount)} DWC for USDC,${account}`
-      );
-      const balance = await this.getDWCBalance(account);
-      if (balance < tokenAmount) {
-        throw new Error(
-          `Insufficient DWC balance. Available: ${formatEther(
-            balance
-          )} DWC, Required: ${formatEther(tokenAmount)} DWC`
-        );
+      console.log(`Swapping ${tokenAmount} DWC for USDC, ${account}`);
+
+      // ✅ get wallet client (signer) from wagmi
+      const walletClient = await getWalletClient(config);
+      if (!walletClient) {
+        throw new Error("Wallet not connected");
       }
-      const gasEstimate = await estimateGas(config, {
-        abi: DWC_ABI,
-        address: DWC_CONTRACT_ADDRESS,
-        functionName: "tokenSwap",
-        args: [tokenAmount],
-        chain: bscTestnet,
-        account,
-      });
+
+      // ✅ write contract with signer
       const txHash = await writeContract(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "tokenSwap",
         args: [tokenAmount],
-        chain: bscTestnet,
-        account,
-        gas: gasEstimate,
-      });
-      await waitForTransactionReceipt(config, {
-        hash: txHash as `0x${string}`,
+        account: walletClient.account, // signer address
         chainId: TESTNET_CHAIN_ID,
       });
-      return txHash as `0x${string}`;
+
+      // ✅ wait for confirmation
+      await waitForTransactionReceipt(config, {
+        hash: txHash,
+        chainId: TESTNET_CHAIN_ID,
+      });
+
+      return txHash;
     } catch (error: any) {
       console.error(`Error swapping tokens: ${error.message || error}`);
       throw error;
     }
   },
-
   async tokenSwapv2(
     tokenAmount: bigint,
     account: Address

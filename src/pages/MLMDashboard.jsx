@@ -386,7 +386,7 @@ const MLMDashboard = () => {
       let stakeInUSDT = 0;
 
       if (depositType === 'bdc') {
-        stakeInUSDT = Number(amount) * (mlmData.coinRate || 1);
+        stakeInUSDT = amount
 
         /* Additional logic for BDC deposits can go here */
 
