@@ -387,7 +387,10 @@ const MLMDashboard = () => {
 
       if (depositType === 'bdc') {
         stakeInUSDT = Number(amount) * (mlmData.coinRate || 1);
-        if (Number(amount) > mlmData.bdcBalance) {
+
+        /* Additional logic for BDC deposits can go here */
+
+        if ((Number(stakeAmount) / (mlmData.coinRate || 1)).toFixed(4) > mlmData.bdcBalance) {
           setError('Insufficient BDC balance.');
           return;
         }

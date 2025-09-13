@@ -1078,7 +1078,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         throw new Error(
           `Deposit amount must be between ${formatEther(
             MIN_DEPOSIT
-          )} and ${formatEther(MAX_DEPOSIT)} DWC`
+          )} and ${formatEther(MAX_DEPOSIT)} BDC`
         );
       }
       const isUserExists = await this.isUserExists(account);
@@ -1090,7 +1090,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         throw new Error(
           `Deposit amount must be greater than or equal to last deposit: ${formatEther(
             userInfo.lastDeposit
-          )} DWC`
+          )} BDC`
         );
       }
       const balance = await this.getDWCBalance(account);
@@ -1098,7 +1098,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         throw new Error(
           `Insufficient DWC balance. Available: ${formatEther(
             balance
-          )} DWC, Required: ${amount} DWC`
+          )} BDC, Required: ${amount} BDC`
         );
       }
       const allowance = (await readContract(config, {
