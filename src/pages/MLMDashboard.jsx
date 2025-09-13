@@ -709,9 +709,10 @@ const MLMDashboard = () => {
                     color="text.secondary"
                     sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}
                   >
-                    {depositType === 'usdt'
+                    {/* {depositType === 'usdt'
                       ? `≈ ${(Number(stakeAmount) / (mlmData.coinRate || 1)).toFixed(4)} BDC`
-                      : `≈ ${(Number(stakeAmount) * (mlmData.coinRate || 1)).toFixed(4)} USDT`}
+                      : `≈ ${(Number(stakeAmount) * (mlmData.coinRate || 1)).toFixed(4)} USDT`} */}
+                    {`≈ ${(Number(stakeAmount) / (mlmData.coinRate || 1)).toFixed(4)} BDC`}
                   </Typography>
                 )}
 
