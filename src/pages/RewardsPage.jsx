@@ -270,7 +270,7 @@ const RewardsPage = () => {
               },
               {
                 icon: <TrendingUpIcon />,
-                title: 'Released Stack Bonus',
+                title: 'Unclaimed Stack Bonus',
                 value: formatCurrency(rewardsData.releasedRetentionBonus),
                 subtitle: 'Total rewards minus withdrawals (USDT)',
                 color: 'success.main',

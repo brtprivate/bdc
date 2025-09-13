@@ -415,7 +415,15 @@ const MLMDashboard = () => {
         chainId: TESTNET_CHAIN_ID,
       });
 
-      setSuccess(`Successfully staked ${amount} ${depositType.toUpperCase()}! TX: ${txHash}`);
+      setSuccess(
+        `Successfully staked ${amount} ${depositType.toUpperCase()}! 
+   TX: <a href="https://testnet.bscscan.com/tx/${txHash}" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          style="color:#1976d2; text-decoration:underline;">
+        ${txHash.slice(0, 6)}...${txHash.slice(-4)}
+      </a>`
+      );
       setStakeAmount('');
       setTimeout(fetchMlmData, 3000);
     } catch (error) {
@@ -458,7 +466,15 @@ const MLMDashboard = () => {
       const txHash = await dwcContractInteractions.rewardWithdraw(index, wallet.account);
       await waitForTransactionReceipt(config, { hash: txHash, chainId: TESTNET_CHAIN_ID });
 
-      setSuccess(`Successfully withdrawn reward! Transaction: ${txHash}`);
+      setSuccess(
+        `Successfully withdrawn reward! Transaction: 
+   <a href="https://testnet.bscscan.com/tx/${txHash}" 
+      target="_blank" 
+      rel="noopener noreferrer" 
+      style="color:#1976d2; text-decoration:underline;">
+      ${txHash.slice(0, 6)}...${txHash.slice(-4)}
+   </a>`
+      );
       setTimeout(fetchMlmData, 3000);
     } catch (error) {
       console.error('Error withdrawing reward:', error);

@@ -23,6 +23,7 @@ const SwapPage = () => {
   const [dwcAmount, setDwcAmount] = useState('');
   const [daiAmount, setDaiAmount] = useState('');
   const [dwcBalance, setDwcBalance] = useState(0);
+  const [usdtBalance, setUsdtBalance] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isApproving, setIsApproving] = useState(false);
@@ -37,7 +38,9 @@ const SwapPage = () => {
   const fetchBalance = async () => {
     try {
       const balance = await dwcContractInteractions.getDWCBalance(wallet.account);
+      const _usdcBalance = await dwcContractInteractions.getUSDCBalance(wallet.account);
       setDwcBalance(parseFloat(formatUnits(balance, 18)));
+      setUsdtBalance(parseFloat(formatUnits(_usdcBalance, 18)));
     } catch (err) {
       console.error('Error fetching balance:', err);
       setError('Failed to fetch balance');
@@ -168,6 +171,9 @@ const SwapPage = () => {
             value={daiAmount ? parseFloat(daiAmount).toFixed(4) : '0.0000'}
             placeholder="0.00"
           />
+          <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: 'text.secondary' }}>
+            Balance: {usdtBalance.toFixed(4)} USDT
+          </Typography>
         </Box>
 
         {/* Actions */}
