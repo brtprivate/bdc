@@ -238,6 +238,7 @@ const MLMDashboard = () => {
         console.log('User Info for Rewards:', userInfo);
       }
 
+      console.log("🚀 ~ fetchRewardsData ~ userInfo:", userInfo)
       if (!userInfo?.id || userInfo.id === 0n) {
         setError('User not registered. Please register to view rewards.');
         setNotRegistered(true);
@@ -773,6 +774,11 @@ const MLMDashboard = () => {
                 >
                   Stake Now
                 </Button>
+                {success && (
+                  <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' }, mt: 1 }}>
+                    {success}
+                  </Typography>
+                )}
 
                 <Typography
                   variant="body2"
