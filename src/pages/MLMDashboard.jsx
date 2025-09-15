@@ -31,17 +31,20 @@ import { USDC_CONTRACT_ADDRESS } from '../services/approvalservice';
 import { TESTNET_CHAIN_ID, USDC_ABI, dwcContractInteractions } from '../services/contractService';
 // import RankLogsDashboard from '../components/sections/RankLogsDashboard';
 // Icons
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
-import DiamondIcon from '@mui/icons-material/Diamond';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import LocalAtmIcon from '@mui/icons-material/LocalAtm';
-import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
-import PeopleIcon from '@mui/icons-material/People';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import TimelineIcon from '@mui/icons-material/Timeline';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import {
+  PiggyBank,
+  TrendingUp,
+  ArrowDownToLine,
+  Users,
+  Layers,
+  Coins,
+  UserMinus,
+  UserPlus,
+  Crown,
+  Banknote
+} from 'lucide-react';
 import ContractStatsSection from '../components/sections/ContractStatsSection';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 
@@ -824,7 +827,7 @@ const MLMDashboard = () => {
 
                 <Button
                   variant="contained"
-                  startIcon={<LocalAtmIcon />}
+                  startIcon={<Banknote size={20} />}
                   onClick={handleStake}
                   disabled={isLoading || !stakeAmount}
                   sx={{ fontSize: { xs: '0.875rem', sm: '1rem' }, mt: 1 }}
@@ -975,11 +978,7 @@ const MLMDashboard = () => {
                       justifyContent: 'center',
                       mb: 2
                     }}>
-                      <AccountBalanceWalletIcon sx={{
-                        color: 'primary.main',
-                        mr: 1,
-                        fontSize: { xs: '1.25rem', sm: '1.5rem' }
-                      }} />
+                      <PiggyBank size={24} style={{ color: '#1976d2', marginRight: '8px' }} />
                       <Typography variant="h6" sx={{
                         fontSize: { xs: '0.85rem', sm: '1rem' },
                         fontWeight: 600
@@ -1156,11 +1155,7 @@ const MLMDashboard = () => {
                       justifyContent: 'center',
                       mb: 1.5
                     }}>
-                      <AccountBalanceIcon sx={{
-                        color: 'primary.main',
-                        mr: 1,
-                        fontSize: { xs: '1.25rem', sm: '1.5rem' }
-                      }} />
+                      <TrendingUp size={24} style={{ color: '#1976d2', marginRight: '8px' }} />
                       <Typography variant="h6" sx={{
                         fontSize: { xs: '0.8rem', sm: '0.9rem' }
                       }}>
@@ -1215,11 +1210,7 @@ const MLMDashboard = () => {
                       justifyContent: 'center',
                       mb: 1.5
                     }}>
-                      <LocalAtmIcon sx={{
-                        color: 'warning.main',
-                        mr: 1,
-                        fontSize: { xs: '1.25rem', sm: '1.5rem' }
-                      }} />
+                      <ArrowDownToLine size={24} style={{ color: '#ed6c02', marginRight: '8px' }} />
                       <Typography variant="h6" sx={{
                         fontSize: { xs: '0.8rem', sm: '0.9rem' }
                       }}>
@@ -1274,11 +1265,7 @@ const MLMDashboard = () => {
                       justifyContent: 'center',
                       mb: 1.5
                     }}>
-                      <PeopleIcon sx={{
-                        color: 'success.main',
-                        mr: 1,
-                        fontSize: { xs: '1.25rem', sm: '1.5rem' }
-                      }} />
+                      <Users size={24} style={{ color: '#2e7d32', marginRight: '8px' }} />
                       <Typography variant="h6" sx={{
                         fontSize: { xs: '0.8rem', sm: '0.9rem' }
                       }}>
@@ -1308,35 +1295,35 @@ const MLMDashboard = () => {
                 >
                   {[
                     {
-                      icon: <MonetizationOnIcon />,
+                      icon: <Layers size={24} />,
                       title: 'Stack Bonus',
                       value: formatCurrency(rewardsData.retentionBonus),
                       subtitle: 'Current reward balance (USDT)',
                       color: 'primary.main',
                     },
                     {
-                      icon: <TrendingUpIcon />,
+                      icon: <Coins size={24} />,
                       title: 'Earning Bonus',
                       value: formatCurrency(rewardsData.releasedRetentionBonus),
                       subtitle: 'Total rewards minus withdrawals (USDT)',
                       color: 'success.main',
                     },
                     {
-                      icon: <MonetizationOnIcon />,
+                      icon: <UserMinus size={24} />,
                       title: 'Team Withdrawal Bonus',
                       value: formatCurrency(rewardsData.residualBonus),
                       subtitle: 'Maturity income (USDT)',
                       color: 'warning.main',
                     },
                     {
-                      icon: <TrendingUpIcon />,
+                      icon: <UserPlus size={24} />,
                       title: 'Team Referral Bonus',
                       value: formatCurrency(rewardsData.levelIncome),
                       subtitle: 'Income from team levels (USDT)',
                       color: 'info.main',
                     },
                     {
-                      icon: <MonetizationOnIcon />,
+                      icon: <Crown size={24} />,
                       title: 'Royalty Bonus',
                       value: formatCurrency(rewardsData.royaltyIncome),
                       subtitle: 'Royalty earnings (USDT)',

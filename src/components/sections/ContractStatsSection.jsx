@@ -20,15 +20,20 @@ import { useBalance } from 'wagmi';
 import { TESTNET_CHAIN_ID, dwcContractInteractions, USDC_ABI } from '../../services/contractService';
 
 // Icons
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import LinkIcon from '@mui/icons-material/Link';
-import PersonIcon from '@mui/icons-material/Person';
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import {
+  Coins,
+  DollarSign,
+  Gem,
+  Users,
+  Waves,
+  Wallet,
+  Share2,
+  UserCheck,
+  Flame,
+  Award,
+  Shield
+} from 'lucide-react';
 
 // Styled Grid component to enforce mobile-first layout
 const MobileFirstGrid = styled(Grid)(({ theme }) => ({
@@ -345,7 +350,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 1.5
               }}>
-                <AccountBalanceWalletIcon sx={{ color: 'primary.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Coins size={24} style={{ color: '#1976d2', marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   BNB Balance
                 </Typography>
@@ -394,7 +399,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 1.5
               }}>
-                <MonetizationOnIcon sx={{ color: 'secondary.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <DollarSign size={24} style={{ color: '#9c27b0', marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   USDT Balance
                 </Typography>
@@ -443,7 +448,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 1.5
               }}>
-                <TrendingUpIcon sx={{ color: 'success.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Gem size={24} style={{ color: '#2e7d32', marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   BDC Balance
                 </Typography>
@@ -493,7 +498,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 2
               }}>
-                <BarChartIcon sx={{ color: 'primary.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Users size={24} style={{ color: '#1976d2', marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, fontWeight: 600 }}>
                   Community Fund
                 </Typography>
@@ -593,7 +598,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 2
               }}>
-                <BarChartIcon sx={{ color: 'primary.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Waves size={24} style={{ color: '#1976d2', marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, fontWeight: 600 }}>
                   Liquidity Pool Fund
                 </Typography>
@@ -715,7 +720,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 1.5
               }}>
-                <PersonIcon sx={{ color: 'error.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Wallet size={24} style={{ color: '#d32f2f', marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   Your Wallet Address
                 </Typography>
@@ -782,7 +787,7 @@ const ContractStatsSection = () => {
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <LinkIcon sx={{ color: "primary.main", mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                  <Share2 size={24} style={{ color: '#1976d2', marginRight: '8px' }} />
                   <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                     Your Referral Link
                   </Typography>
@@ -858,7 +863,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 1.5
               }}>
-                <PersonIcon sx={{ color: 'secondary.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <UserCheck size={24} style={{ color: '#9c27b0', marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   Sponsor Address
                 </Typography>
@@ -910,7 +915,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 1.5
               }}>
-                <BarChartIcon sx={{ color: 'error.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Flame size={24} style={{ color: '#d32f2f', marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   Burned Tokens
                 </Typography>
@@ -959,7 +964,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 1.5
               }}>
-                <EmojiEventsIcon sx={{ color: 'info.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Award size={24} style={{ color: '#0288d1', marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   Your Rank
                 </Typography>
@@ -1008,7 +1013,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 1.5
               }}>
-                <CheckCircleIcon sx={{ color: statsData.userStatus === 'INACTIVE' ? "error.main" : 'success.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Shield size={24} style={{ color: statsData.userStatus === 'INACTIVE' ? '#d32f2f' : '#2e7d32', marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   Contract Status
                 </Typography>
