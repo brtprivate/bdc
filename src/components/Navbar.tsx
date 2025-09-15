@@ -295,24 +295,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   Rewards
                 </Button>
 
-                {currentWallet.isConnected &&
-                  !currentWallet.isRegistered &&
-                  !mlm.isLoading && (
-                    <Button
-                      color="inherit"
-                      component={RouterLink}
-                      to="/"
-                      sx={{
-                        borderRadius: "20px",
-                        px: 2,
-                        backgroundColor: "rgba(255, 255, 255, 0.15)",
-                        border: "2px solid #FF8F00",
-                      }}
-                      startIcon={<PersonAddIcon />}
-                    >
-                      Register Now
-                    </Button>
-                  )}
+
                 {currentWallet.isConnected && mlm.isLoading && (
                   <Button
                     color="inherit"
@@ -578,27 +561,7 @@ const Navbar: React.FC<NavbarProps> = ({
             <ListItemText primary="Rewards" sx={{ color: "white" }} />
           </ListItem>
 
-          {currentWallet.isConnected &&
-            !currentWallet.isRegistered &&
-            !mlm.isLoading && (
-              <ListItem
-                component={RouterLink}
-                to="/"
-                onClick={toggleDrawer}
-                sx={{
-                  backgroundColor: "rgba(255, 255, 255, 0.15)",
-                  borderRadius: "4px",
-                  mx: 1,
-                  mb: 0.5,
-                  border: "1px solid #FF8F00",
-                }}
-              >
-                <ListItemIcon sx={{ color: "white", minWidth: 40 }}>
-                  <PersonAddIcon />
-                </ListItemIcon>
-                <ListItemText primary="Register Now" sx={{ color: "white" }} />
-              </ListItem>
-            )}
+
         </List>
 
         <Box sx={{ position: "absolute", bottom: 16, width: "100%", px: 2 }}>

@@ -12,6 +12,7 @@ import {
   Container,
   Backdrop,
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { useWallet } from '../../context/WalletContext';
 import { useChainId, useSwitchChain } from 'wagmi';
 import { formatUnits, decodeErrorResult } from 'viem';
@@ -21,21 +22,67 @@ import { TESTNET_CHAIN_ID, dwcContractInteractions, USDC_ABI } from '../../servi
 // Icons
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import LinkIcon from '@mui/icons-material/Link';
 import PersonIcon from '@mui/icons-material/Person';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
-import PeopleIcon from '@mui/icons-material/People';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PoolIcon from '@mui/icons-material/Pool';
-import { Link2Icon } from 'lucide-react';
+
+// Styled Grid component to enforce mobile-first layout
+const MobileFirstGrid = styled(Grid)(({ theme }) => ({
+  '& .MuiGrid-item': {
+    [theme.breakpoints.down('sm')]: {
+      width: '100% !important',
+      maxWidth: '100% !important',
+      flexBasis: '100% !important',
+      flex: '0 0 100% !important',
+    },
+  },
+}));
+
 const ContractStatsSection = () => {
   const wallet = useWallet();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
+
+  // Inject CSS to ensure mobile-first layout
+  React.useEffect(() => {
+    const styleId = 'contract-stats-mobile-styles';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        @media (max-width: 599px) {
+          .MuiGrid-container .MuiGrid-item {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex-basis: 100% !important;
+            flex: 0 0 100% !important;
+          }
+          .MuiGrid-container .MuiGrid-item .MuiCard-root {
+            width: 100% !important;
+            margin: 0 !important;
+          }
+          .MuiGrid-container .MuiGrid-item .MuiCardContent-root {
+            text-align: center !important;
+          }
+          .MuiGrid-container .MuiGrid-item .MuiBox-root {
+            justify-content: center !important;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    return () => {
+      const existingStyle = document.getElementById(styleId);
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+    };
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [statsData, setStatsData] = useState({
@@ -71,7 +118,8 @@ const ContractStatsSection = () => {
       case 2: return 'Star';
       case 3: return 'Two Star';
       case 4: return 'Three Star';
-      case 5: return 'Five Star';
+      case 5: return 'Four Star';
+      case 6: return 'Five Star';
       default: return 'Holder';
     }
   };
@@ -210,7 +258,7 @@ const ContractStatsSection = () => {
   // }
 
   return (
-    <Card sx={{ p: 3, boxShadow: 3 }}>
+    <Card sx={{ p: { xs: 2, sm: 3 }, boxShadow: 3 }}>
       {isLoading && (
         <Backdrop
           open={true}
@@ -223,7 +271,16 @@ const ContractStatsSection = () => {
           <CircularProgress color="inherit" />
         </Backdrop>
       )}
-      <Typography variant="h5" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold', mb: 3 }}>
+      <Typography
+        variant="h5"
+        gutterBottom
+        sx={{
+          color: 'primary.main',
+          fontWeight: 'bold',
+          mb: { xs: 2, sm: 3 },
+          fontSize: { xs: '1.25rem', sm: '1.5rem' }
+        }}
+      >
         Contract Stats & Balances
       </Typography>
 
@@ -233,71 +290,211 @@ const ContractStatsSection = () => {
         </Alert>
       )}
 
-      <Grid container spacing={2}>
-        <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <AccountBalanceWalletIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+      <MobileFirstGrid
+        container
+        spacing={{ xs: 1, sm: 2 }}
+        sx={{
+          // Additional mobile-first responsive behavior with stronger CSS overrides
+          '& > .MuiGrid-item': {
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              maxWidth: '100% !important',
+              flexBasis: '100% !important',
+              flex: '0 0 100% !important'
+            },
+            '@media (min-width: 600px) and (max-width: 899px)': {
+              width: '50% !important',
+              maxWidth: '50% !important',
+              flexBasis: '50% !important',
+              flex: '0 0 50% !important'
+            }
+          }
+        }}
+      >
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={4}
+          sx={{
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              maxWidth: '100% !important',
+              flexBasis: '100% !important'
+            }
+          }}
+        >
+          <Card sx={{
+            p: { xs: 1.5, sm: 2 },
+            boxShadow: 2,
+            height: '100%',
+            width: '100%',
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              margin: '0 !important'
+            }
+          }}>
+            <CardContent sx={{
+              p: { xs: 1, sm: 2 },
+              '&:last-child': { pb: { xs: 1, sm: 2 } },
+              textAlign: 'center'
+            }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 1.5
+              }}>
+                <AccountBalanceWalletIcon sx={{ color: 'primary.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   BNB Balance
                 </Typography>
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', fontSize: '1.25rem' }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                 {formatCurrency(statsData.bnbBalance)}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' } }}>
                 BNB
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <MonetizationOnIcon sx={{ color: 'secondary.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={4}
+          sx={{
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              maxWidth: '100% !important',
+              flexBasis: '100% !important'
+            }
+          }}
+        >
+          <Card sx={{
+            p: { xs: 1.5, sm: 2 },
+            boxShadow: 2,
+            height: '100%',
+            width: '100%',
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              margin: '0 !important'
+            }
+          }}>
+            <CardContent sx={{
+              p: { xs: 1, sm: 2 },
+              '&:last-child': { pb: { xs: 1, sm: 2 } },
+              textAlign: 'center'
+            }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 1.5
+              }}>
+                <MonetizationOnIcon sx={{ color: 'secondary.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   USDT Balance
                 </Typography>
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'secondary.main', fontSize: '1.25rem' }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'secondary.main', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                 {formatCurrency(statsData.usdcBalance)}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' } }}>
                 USDT
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <TrendingUpIcon sx={{ color: 'success.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={4}
+          sx={{
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              maxWidth: '100% !important',
+              flexBasis: '100% !important'
+            }
+          }}
+        >
+          <Card sx={{
+            p: { xs: 1.5, sm: 2 },
+            boxShadow: 2,
+            height: '100%',
+            width: '100%',
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              margin: '0 !important'
+            }
+          }}>
+            <CardContent sx={{
+              p: { xs: 1, sm: 2 },
+              '&:last-child': { pb: { xs: 1, sm: 2 } },
+              textAlign: 'center'
+            }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 1.5
+              }}>
+                <TrendingUpIcon sx={{ color: 'success.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   BDC Balance
                 </Typography>
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'success.main', fontSize: '1.25rem' }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'success.main', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                 {formatDWC(statsData.dwcBalance)}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' } }}>
                 BDC
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={6}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={4}
+          sx={{
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              maxWidth: '100% !important',
+              flexBasis: '100% !important'
+            }
+          }}
+        >
+          <Card sx={{
+            p: { xs: 1.5, sm: 2 },
+            boxShadow: 2,
+            height: '100%',
+            width: '100%',
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              margin: '0 !important'
+            }
+          }}>
+            <CardContent sx={{
+              p: { xs: 1, sm: 2 },
+              '&:last-child': { pb: { xs: 1, sm: 2 } },
+              textAlign: 'center'
+            }}>
               {/* Header */}
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <BarChartIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 2
+              }}>
+                <BarChartIcon sx={{ color: 'primary.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, fontWeight: 600 }}>
                   Community Fund
                 </Typography>
               </Box>
@@ -306,16 +503,15 @@ const ContractStatsSection = () => {
               <Box
                 sx={{
                   display: "flex",
-                  justifyContent: { xs: "flex-start", sm: "space-between" },
-                  flexDirection: { xs: "column", sm: "row" },
-                  alignItems: { xs: "flex-start", sm: "center" },
-                  gap: { xs: 1.5, sm: 3 },
-                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: { xs: 1.5, sm: 2 },
                   width: "100%",
                 }}
               >
                 {/* BDC */}
-                <Box>
+                <Box sx={{ textAlign: 'center' }}>
                   <Typography
                     variant="h5"
                     sx={{
@@ -337,7 +533,7 @@ const ContractStatsSection = () => {
                 </Box>
 
                 {/* USDT */}
-                <Box>
+                <Box sx={{ textAlign: 'center' }}>
                   <Typography
                     variant="h5"
                     sx={{
@@ -362,14 +558,43 @@ const ContractStatsSection = () => {
             </CardContent>
           </Card>
         </Grid>
-        {/* this */}
-        <Grid item xs={12} sm={6} md={6}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={4}
+          sx={{
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              maxWidth: '100% !important',
+              flexBasis: '100% !important'
+            }
+          }}
+        >
+          <Card sx={{
+            p: { xs: 1.5, sm: 2 },
+            boxShadow: 2,
+            height: '100%',
+            width: '100%',
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              margin: '0 !important'
+            }
+          }}>
+            <CardContent sx={{
+              p: { xs: 1, sm: 2 },
+              '&:last-child': { pb: { xs: 1, sm: 2 } },
+              textAlign: 'center'
+            }}>
               {/* Header */}
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <BarChartIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 2
+              }}>
+                <BarChartIcon sx={{ color: 'primary.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, fontWeight: 600 }}>
                   Liquidity Pool Fund
                 </Typography>
               </Box>
@@ -378,16 +603,15 @@ const ContractStatsSection = () => {
               <Box
                 sx={{
                   display: "flex",
-                  justifyContent: { xs: "flex-start", sm: "space-between" },
-                  flexDirection: { xs: "column", sm: "row" },
-                  alignItems: { xs: "flex-start", sm: "center" },
-                  gap: { xs: 1.5, sm: 3 },
-                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: { xs: 1.5, sm: 2 },
                   width: "100%",
                 }}
               >
                 {/* BDC */}
-                <Box>
+                <Box sx={{ textAlign: 'center' }}>
                   <Typography
                     variant="h5"
                     sx={{
@@ -409,7 +633,7 @@ const ContractStatsSection = () => {
                 </Box>
 
                 {/* USDT */}
-                <Box>
+                <Box sx={{ textAlign: 'center' }}>
                   <Typography
                     variant="h5"
                     sx={{
@@ -457,12 +681,42 @@ const ContractStatsSection = () => {
           </Card>
         </Grid> */}
         {/* Your Wallet Address */}
-        <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <PersonIcon sx={{ color: 'error.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={4}
+          sx={{
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              maxWidth: '100% !important',
+              flexBasis: '100% !important'
+            }
+          }}
+        >
+          <Card sx={{
+            p: { xs: 1.5, sm: 2 },
+            boxShadow: 2,
+            height: '100%',
+            width: '100%',
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              margin: '0 !important'
+            }
+          }}>
+            <CardContent sx={{
+              p: { xs: 1, sm: 2 },
+              '&:last-child': { pb: { xs: 1, sm: 2 } },
+              textAlign: 'center'
+            }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 1.5
+              }}>
+                <PersonIcon sx={{ color: 'error.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   Your Wallet Address
                 </Typography>
               </Box>
@@ -491,19 +745,45 @@ const ContractStatsSection = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{ p: 2, boxShadow: 2 }}>
-            <CardContent>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={4}
+          sx={{
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              maxWidth: '100% !important',
+              flexBasis: '100% !important'
+            }
+          }}
+        >
+          <Card sx={{
+            p: { xs: 1.5, sm: 2 },
+            boxShadow: 2,
+            height: '100%',
+            width: '100%',
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              margin: '0 !important'
+            }
+          }}>
+            <CardContent sx={{
+              p: { xs: 1, sm: 2 },
+              '&:last-child': { pb: { xs: 1, sm: 2 } },
+              textAlign: 'center'
+            }}>
               <Box
                 sx={{
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
+                  justifyContent: "center",
+                  mb: 1.5
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <LinkIcon sx={{ color: "primary.main", mr: 1, fontSize: "1.5rem" }} />
-                  <Typography variant="h6" sx={{ fontSize: "0.9rem" }}>
+                  <LinkIcon sx={{ color: "primary.main", mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                  <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                     Your Referral Link
                   </Typography>
                 </Box>
@@ -544,19 +824,49 @@ const ContractStatsSection = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <PersonIcon sx={{ color: 'secondary.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={4}
+          sx={{
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              maxWidth: '100% !important',
+              flexBasis: '100% !important'
+            }
+          }}
+        >
+          <Card sx={{
+            p: { xs: 1.5, sm: 2 },
+            boxShadow: 2,
+            height: '100%',
+            width: '100%',
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              margin: '0 !important'
+            }
+          }}>
+            <CardContent sx={{
+              p: { xs: 1, sm: 2 },
+              '&:last-child': { pb: { xs: 1, sm: 2 } },
+              textAlign: 'center'
+            }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 1.5
+              }}>
+                <PersonIcon sx={{ color: 'secondary.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   Sponsor Address
                 </Typography>
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'secondary.main', fontSize: '1rem' }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'secondary.main', fontSize: { xs: '0.9rem', sm: '1rem' } }}>
                 {formatAddress(statsData.referrerAddress)}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' } }}>
                 Referred By
               </Typography>
             </CardContent>
@@ -566,57 +876,147 @@ const ContractStatsSection = () => {
 
 
 
-        <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <BarChartIcon sx={{ color: 'error.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={4}
+          sx={{
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              maxWidth: '100% !important',
+              flexBasis: '100% !important'
+            }
+          }}
+        >
+          <Card sx={{
+            p: { xs: 1.5, sm: 2 },
+            boxShadow: 2,
+            height: '100%',
+            width: '100%',
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              margin: '0 !important'
+            }
+          }}>
+            <CardContent sx={{
+              p: { xs: 1, sm: 2 },
+              '&:last-child': { pb: { xs: 1, sm: 2 } },
+              textAlign: 'center'
+            }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 1.5
+              }}>
+                <BarChartIcon sx={{ color: 'error.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   Burned Tokens
                 </Typography>
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'error.main', fontSize: '1.25rem' }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'error.main', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                 {formatDWC(statsData.burnedTokens)}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' } }}>
                 BDC
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <EmojiEventsIcon sx={{ color: 'info.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={4}
+          sx={{
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              maxWidth: '100% !important',
+              flexBasis: '100% !important'
+            }
+          }}
+        >
+          <Card sx={{
+            p: { xs: 1.5, sm: 2 },
+            boxShadow: 2,
+            height: '100%',
+            width: '100%',
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              margin: '0 !important'
+            }
+          }}>
+            <CardContent sx={{
+              p: { xs: 1, sm: 2 },
+              '&:last-child': { pb: { xs: 1, sm: 2 } },
+              textAlign: 'center'
+            }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 1.5
+              }}>
+                <EmojiEventsIcon sx={{ color: 'info.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   Your Rank
                 </Typography>
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'info.main', fontSize: '1.25rem' }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'info.main', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                 {statsData.userStatus === 'INACTIVE' ? "N/A" : statsData.userRank}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' } }}>
                 Rank Status
               </Typography>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
-          <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                <CheckCircleIcon sx={{ color: statsData.userStatus === 'INACTIVE' ? "error.main" : 'success.main', mr: 1, fontSize: '1.5rem' }} />
-                <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+        <Grid
+          item
+          xs={12}
+          sm={6}
+          lg={4}
+          sx={{
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              maxWidth: '100% !important',
+              flexBasis: '100% !important'
+            }
+          }}
+        >
+          <Card sx={{
+            p: { xs: 1.5, sm: 2 },
+            boxShadow: 2,
+            height: '100%',
+            width: '100%',
+            '@media (max-width: 599px)': {
+              width: '100% !important',
+              margin: '0 !important'
+            }
+          }}>
+            <CardContent sx={{
+              p: { xs: 1, sm: 2 },
+              '&:last-child': { pb: { xs: 1, sm: 2 } },
+              textAlign: 'center'
+            }}>
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mb: 1.5
+              }}>
+                <CheckCircleIcon sx={{ color: statsData.userStatus === 'INACTIVE' ? "error.main" : 'success.main', mr: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
+                <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   Contract Status
                 </Typography>
               </Box>
-              <Typography variant="h4" sx={{ fontWeight: 'bold', color: statsData.userStatus === 'INACTIVE' ? "error.main" : 'success.main', fontSize: '1.25rem' }}>
+              <Typography variant="h4" sx={{ fontWeight: 'bold', color: statsData.userStatus === 'INACTIVE' ? "error.main" : 'success.main', fontSize: { xs: '1.1rem', sm: '1.25rem' } }}>
                 {statsData.userStatus}
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' } }}>
                 Status
               </Typography>
             </CardContent>
@@ -647,7 +1047,7 @@ const ContractStatsSection = () => {
 
         <Box
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             borderRadius: 2,
             backgroundColor: "background.paper",
             boxShadow: 2,
@@ -658,15 +1058,17 @@ const ContractStatsSection = () => {
           <Box
             sx={{
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              justifyContent: { xs: "flex-start", sm: "space-between" },
+              alignItems: { xs: "flex-start", sm: "center" },
+              flexDirection: { xs: "column", sm: "row" },
+              gap: { xs: 1, sm: 0 },
               mb: 1.5,
             }}
           >
-            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+            <Typography variant="body1" sx={{ fontWeight: 500, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
               Earning Limit: {statsData?.user?.rank < 6 ? statsData?.totalDeposit * 3 || 0 : statsData?.totalDeposit * 4 || 0}
             </Typography>
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            <Typography variant="body1" sx={{ fontWeight: 600, fontSize: { xs: '0.85rem', sm: '1rem' } }}>
               Remaining Limit : {statsData?.maxPayout || 0}
             </Typography>
           </Box>
@@ -691,12 +1093,12 @@ const ContractStatsSection = () => {
                   variant="determinate"
                   value={progress > 0 ? progress : 1} // keep bar visible if 0
                   sx={{
-                    height: 12,
+                    height: { xs: 10, sm: 12 },
                     width: "100%",
-                    borderRadius: 6,
+                    borderRadius: { xs: 5, sm: 6 },
                     backgroundColor: "grey.300",
                     "& .MuiLinearProgress-bar": {
-                      borderRadius: 6,
+                      borderRadius: { xs: 5, sm: 6 },
                     },
                   }}
                 />
@@ -706,7 +1108,7 @@ const ContractStatsSection = () => {
 
         </Box>
 
-      </Grid>
+      </MobileFirstGrid>
     </Card>
   );
 };

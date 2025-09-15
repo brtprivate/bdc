@@ -20,6 +20,7 @@ import {
   TextField,
   Typography
 } from '@mui/material';
+import { styled } from '@mui/material/styles';
 import { readContract, waitForTransactionReceipt } from '@wagmi/core';
 import React, { useEffect, useState } from 'react';
 import { decodeErrorResult, formatUnits, parseUnits } from 'viem';
@@ -28,6 +29,7 @@ import { config } from '../config/web3modal';
 import { useWallet } from '../context/WalletContext';
 import { USDC_CONTRACT_ADDRESS } from '../services/approvalservice';
 import { TESTNET_CHAIN_ID, USDC_ABI, dwcContractInteractions } from '../services/contractService';
+// import RankLogsDashboard from '../components/sections/RankLogsDashboard';
 // Icons
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -43,13 +45,63 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import ContractStatsSection from '../components/sections/ContractStatsSection';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 
+// Styled Grid component to enforce mobile-first layout
+const MobileFirstGrid = styled(Grid)(({ theme }) => ({
+  '& .MuiGrid-item': {
+    [theme.breakpoints.down('sm')]: {
+      width: '100% !important',
+      maxWidth: '100% !important',
+      flexBasis: '100% !important',
+      flex: '0 0 100% !important',
+    },
+  },
+}));
+
 const MLMDashboard = () => {
   const { open } = useWeb3Modal();
 
   const wallet = useWallet();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
+
+  // Inject CSS to ensure mobile-first layout for Performance Overview
+  React.useEffect(() => {
+    const styleId = 'performance-overview-mobile-styles';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        @media (max-width: 599px) {
+          .performance-overview-grid .MuiGrid-item {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex-basis: 100% !important;
+            flex: 0 0 100% !important;
+          }
+          .performance-overview-grid .MuiGrid-item .MuiCard-root {
+            width: 100% !important;
+            margin: 0 !important;
+          }
+          .performance-overview-grid .MuiCardContent-root {
+            text-align: center !important;
+          }
+          .performance-overview-grid .MuiBox-root {
+            justify-content: center !important;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    return () => {
+      const existingStyle = document.getElementById(styleId);
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+    };
+  }, []);
   const [isLoading, setIsLoading] = useState(false);
+  const [withdrawingIndex, setWithdrawingIndex] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [referralCode, setReferralCode] = useState('');
@@ -130,6 +182,7 @@ const MLMDashboard = () => {
       setNotRegistered(false);
 
       // Fetch additional data
+      console.log('🚀 Dashboard: Starting comprehensive data fetch...');
       const [
         usdcBalanceRaw,
         dwcBalanceRaw,
@@ -142,11 +195,14 @@ const MLMDashboard = () => {
         dwcContractInteractions.getUSDCBalance(wallet.account),
         dwcContractInteractions.getDWCBalance(wallet.account),
         dwcContractInteractions.getUserCapping(wallet.account),
-        dwcContractInteractions.getUserRank(wallet.account),
+        dwcContractInteractions.getUserRank(wallet.account), // 🏆 This will trigger enhanced logging
         dwcContractInteractions.getOrderLength(wallet.account),
         dwcContractInteractions.getCoinRate(),
         // dwcContractInteractions.bonusInfos(wallet.account),
       ]);
+
+      console.log('✅ Dashboard: All data fetched successfully');
+      console.log('🏆 Dashboard: User Rank Result:', userRank);
 
       console.log('Raw USDC Balance:', usdcBalanceRaw);
       console.log('Coin Rate:', coinRateRaw);
@@ -456,7 +512,7 @@ const MLMDashboard = () => {
     }
 
     try {
-      setIsLoading(true);
+      setWithdrawingIndex(index);
       setError('');
       setSuccess('');
 
@@ -476,7 +532,7 @@ const MLMDashboard = () => {
         setError(`Failed to withdraw reward: ${error.message || 'Unknown error'}`);
       }
     } finally {
-      setIsLoading(false);
+      setWithdrawingIndex(null);
     }
   };
 
@@ -619,6 +675,7 @@ const MLMDashboard = () => {
 
       <Grid container spacing={2}>
 
+      
 
         {/* Third Box: Contract Stats & Balances */}
         <Grid item xs={12} sx={{ order: 1 }}>
@@ -866,36 +923,94 @@ const MLMDashboard = () => {
             </Typography>
 
             {/* Financial Overview */}
-            <Typography
+            {/* <Typography
               variant="h6"
               gutterBottom
-              sx={{ color: 'primary.main', mb: { xs: 2, sm: 3 }, fontSize: { xs: '1rem', sm: '1.25rem' } }}
+              sx={{
+                color: 'primary.main',
+                mb: { xs: 2, sm: 3 },
+                fontSize: { xs: '1rem', sm: '1.25rem' },
+                textAlign: 'center'
+              }}
             >
               Financial Overview
-            </Typography>
-            <Grid container spacing={2} sx={{ mb: { xs: 3, sm: 4 } }}>
-              <Grid item xs={12} md={6}>
-                <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-                  <CardContent>
+            </Typography> */}
+            <MobileFirstGrid
+              container
+              spacing={{ xs: 1, sm: 2 }}
+              sx={{ mb: { xs: 3, sm: 4 } }}
+              className="performance-overview-grid"
+            >
+              <Grid
+                item
+                xs={12}
+                sm={6}
+                md={4}
+                sx={{
+                  '@media (max-width: 599px)': {
+                    width: '100% !important',
+                    maxWidth: '100% !important',
+                    flexBasis: '100% !important'
+                  }
+                }}
+              >
+                <Card sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  boxShadow: 2,
+                  height: '100%',
+                  '@media (max-width: 599px)': {
+                    width: '100% !important',
+                    margin: '0 !important'
+                  }
+                }}>
+                  <CardContent sx={{
+                    p: { xs: 1, sm: 2 },
+                    '&:last-child': { pb: { xs: 1, sm: 2 } },
+                    textAlign: 'center'
+                  }}>
                     {/* Header */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      <AccountBalanceWalletIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.5rem' }} />
-                      <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 600 }}>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 2
+                    }}>
+                      <AccountBalanceWalletIcon sx={{
+                        color: 'primary.main',
+                        mr: 1,
+                        fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                      }} />
+                      <Typography variant="h6" sx={{
+                        fontSize: { xs: '0.85rem', sm: '1rem' },
+                        fontWeight: 600
+                      }}>
                         My Holding
                       </Typography>
                     </Box>
 
                     {/* Values Row */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 3 }}>
+                    <Box sx={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      flexDirection: 'column',
+                      gap: 1
+                    }}>
                       {/* USDT Holding */}
-                      <Box>
+                      <Box sx={{ textAlign: 'center' }}>
                         <Typography
                           variant="h5"
-                          sx={{ fontWeight: 'bold', color: 'info.main', fontSize: '1.25rem' }}
+                          sx={{
+                            fontWeight: 'bold',
+                            color: 'info.main',
+                            fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                          }}
                         >
                           {formatCurrency(rewardsData?.totalDeposit || 0)}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                        <Typography variant="body2" color="text.secondary" sx={{
+                          fontSize: { xs: '0.75rem', sm: '0.8rem' }
+                        }}>
                           USDT
                         </Typography>
                       </Box>
@@ -1008,63 +1123,189 @@ const MLMDashboard = () => {
                 </Card>
               </Grid> */}
 
-              <Grid item xs={12} sm={6} >
-                <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                      <AccountBalanceIcon sx={{ color: 'primary.main', mr: 1, fontSize: '1.5rem' }} />
-                      <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+              <Grid
+                item
+                xs={12}
+                sm={6}
+                md={4}
+                sx={{
+                  '@media (max-width: 599px)': {
+                    width: '100% !important',
+                    maxWidth: '100% !important',
+                    flexBasis: '100% !important'
+                  }
+                }}
+              >
+                <Card sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  boxShadow: 2,
+                  height: '100%',
+                  '@media (max-width: 599px)': {
+                    width: '100% !important',
+                    margin: '0 !important'
+                  }
+                }}>
+                  <CardContent sx={{
+                    p: { xs: 1, sm: 2 },
+                    '&:last-child': { pb: { xs: 1, sm: 2 } },
+                    textAlign: 'center'
+                  }}>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 1.5
+                    }}>
+                      <AccountBalanceIcon sx={{
+                        color: 'primary.main',
+                        mr: 1,
+                        fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                      }} />
+                      <Typography variant="h6" sx={{
+                        fontSize: { xs: '0.8rem', sm: '0.9rem' }
+                      }}>
                         Total Income
                       </Typography>
                     </Box>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'primary.main', fontSize: '1.25rem' }}>
+                    <Typography variant="h4" sx={{
+                      fontWeight: 'bold',
+                      color: 'primary.main',
+                      fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                    }}>
                       {formatCurrency(mlmData.totalIncome)}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{
+                      fontSize: { xs: '0.75rem', sm: '0.8rem' }
+                    }}>
                       USDT
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} >
-                <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                      <LocalAtmIcon sx={{ color: 'warning.main', mr: 1, fontSize: '1.5rem' }} />
-                      <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+              <Grid
+                item
+                xs={12}
+                sm={6}
+                md={4}
+                sx={{
+                  '@media (max-width: 599px)': {
+                    width: '100% !important',
+                    maxWidth: '100% !important',
+                    flexBasis: '100% !important'
+                  }
+                }}
+              >
+                <Card sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  boxShadow: 2,
+                  height: '100%',
+                  '@media (max-width: 599px)': {
+                    width: '100% !important',
+                    margin: '0 !important'
+                  }
+                }}>
+                  <CardContent sx={{
+                    p: { xs: 1, sm: 2 },
+                    '&:last-child': { pb: { xs: 1, sm: 2 } },
+                    textAlign: 'center'
+                  }}>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 1.5
+                    }}>
+                      <LocalAtmIcon sx={{
+                        color: 'warning.main',
+                        mr: 1,
+                        fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                      }} />
+                      <Typography variant="h6" sx={{
+                        fontSize: { xs: '0.8rem', sm: '0.9rem' }
+                      }}>
                         Total Withdraw
                       </Typography>
                     </Box>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'warning.main', fontSize: '1.25rem' }}>
+                    <Typography variant="h4" sx={{
+                      fontWeight: 'bold',
+                      color: 'warning.main',
+                      fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                    }}>
                       {formatCurrency(mlmData.totalWithdraw)}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{
+                      fontSize: { xs: '0.75rem', sm: '0.8rem' }
+                    }}>
                       USDT
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
-              <Grid item xs={12} sm={6} >
-                <Card sx={{ p: 2, boxShadow: 2, height: '100%' }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                      <PeopleIcon sx={{ color: 'success.main', mr: 1, fontSize: '1.5rem' }} />
-                      <Typography variant="h6" sx={{ fontSize: '0.9rem' }}>
+              <Grid
+                item
+                xs={12}
+                sm={6}
+                md={4}
+                sx={{
+                  '@media (max-width: 599px)': {
+                    width: '100% !important',
+                    maxWidth: '100% !important',
+                    flexBasis: '100% !important'
+                  }
+                }}
+              >
+                <Card sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  boxShadow: 2,
+                  height: '100%',
+                  '@media (max-width: 599px)': {
+                    width: '100% !important',
+                    margin: '0 !important'
+                  }
+                }}>
+                  <CardContent sx={{
+                    p: { xs: 1, sm: 2 },
+                    '&:last-child': { pb: { xs: 1, sm: 2 } },
+                    textAlign: 'center'
+                  }}>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 1.5
+                    }}>
+                      <PeopleIcon sx={{
+                        color: 'success.main',
+                        mr: 1,
+                        fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                      }} />
+                      <Typography variant="h6" sx={{
+                        fontSize: { xs: '0.8rem', sm: '0.9rem' }
+                      }}>
                         Team Count
                       </Typography>
                     </Box>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'success.main', fontSize: '1.25rem' }}>
+                    <Typography variant="h4" sx={{
+                      fontWeight: 'bold',
+                      color: 'success.main',
+                      fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                    }}>
                       {mlmData.teamCount}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8rem' }}>
+                    <Typography variant="body2" color="text.secondary" sx={{
+                      fontSize: { xs: '0.75rem', sm: '0.8rem' }
+                    }}>
                       Team Members
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
               <Grid item xs={12}>
-
-                <Grid container spacing={2}>
+                <MobileFirstGrid
+                  container
+                  spacing={{ xs: 1, sm: 2 }}
+                  className="performance-overview-grid"
+                >
                   {[
                     {
                       icon: <MonetizationOnIcon />,
@@ -1075,7 +1316,7 @@ const MLMDashboard = () => {
                     },
                     {
                       icon: <TrendingUpIcon />,
-                      title: 'Unclaimed Stack Bonus',
+                      title: 'Earning Bonus',
                       value: formatCurrency(rewardsData.releasedRetentionBonus),
                       subtitle: 'Total rewards minus withdrawals (USDT)',
                       color: 'success.main',
@@ -1102,28 +1343,72 @@ const MLMDashboard = () => {
                       color: 'secondary.main',
                     },
                   ].map((card, index) => (
-                    <Grid item xs={12} sm={6} md={4} key={`reward-${index}`}>
-                      <Card sx={{ p: { xs: 1.5, sm: 2 }, boxShadow: 3, height: '100%' }}>
-                        <CardContent>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                            {React.cloneElement(card.icon, { sx: { color: card.color, mr: 1, fontSize: { xs: '1.5rem', sm: '2rem' } } })}
-                            <Typography variant="h6" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                    <Grid
+                      item
+                      xs={12}
+                      sm={6}
+                      md={4}
+                      key={`reward-${index}`}
+                      sx={{
+                        '@media (max-width: 599px)': {
+                          width: '100% !important',
+                          maxWidth: '100% !important',
+                          flexBasis: '100% !important'
+                        }
+                      }}
+                    >
+                      <Card sx={{
+                        p: { xs: 1.5, sm: 2 },
+                        boxShadow: 3,
+                        height: '100%',
+                        '@media (max-width: 599px)': {
+                          width: '100% !important',
+                          margin: '0 !important'
+                        }
+                      }}>
+                        <CardContent sx={{
+                          p: { xs: 1, sm: 2 },
+                          '&:last-child': { pb: { xs: 1, sm: 2 } },
+                          textAlign: 'center'
+                        }}>
+                          <Box sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            mb: 1.5
+                          }}>
+                            {React.cloneElement(card.icon, {
+                              sx: {
+                                color: card.color,
+                                mr: 1,
+                                fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                              }
+                            })}
+                            <Typography variant="h6" sx={{
+                              fontSize: { xs: '0.8rem', sm: '0.9rem' }
+                            }}>
                               {card.title}
                             </Typography>
                           </Box>
-                          <Typography variant="h4" sx={{ fontWeight: 'bold', color: card.color, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                          <Typography variant="h4" sx={{
+                            fontWeight: 'bold',
+                            color: card.color,
+                            fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                          }}>
                             {card.value}
                           </Typography>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                          <Typography variant="body2" color="text.secondary" sx={{
+                            fontSize: { xs: '0.7rem', sm: '0.8rem' }
+                          }}>
                             {card.subtitle}
                           </Typography>
                         </CardContent>
                       </Card>
                     </Grid>
                   ))}
-                </Grid>
+                </MobileFirstGrid>
               </Grid>
-            </Grid>
+            </MobileFirstGrid>
 
             {/* Orders Table */}
             {!notRegistered && (
@@ -1161,9 +1446,9 @@ const MLMDashboard = () => {
                                 variant="contained"
                                 size="small"
                                 onClick={() => handleWithdrawReward(index)}
-                                disabled={isLoading}
+                                disabled={withdrawingIndex === index}
                               >
-                                Withdraw
+                                {withdrawingIndex === index ? 'Processing...' : 'Withdraw'}
                               </Button>
                             )}
                           </TableCell>

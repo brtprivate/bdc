@@ -1720,7 +1720,22 @@ export const dwcContractInteractions: DWCContractInteractions = {
   },
 
   async getUserRank(user: Address): Promise<UserRank> {
+    const startTime = Date.now();
+    const timestamp = new Date().toISOString();
+
     try {
+      // 🔍 Pre-execution logging
+      console.group(`🏆 getUserRank Function Call - ${timestamp}`);
+      console.log(`📋 Function: getUserRank`);
+      console.log(`👤 User Address: ${user}`);
+      console.log(`📍 Contract Address: ${DWC_CONTRACT_ADDRESS}`);
+      console.log(`🌐 Chain ID: ${TESTNET_CHAIN_ID}`);
+      console.log(`⏰ Start Time: ${timestamp}`);
+      console.log(`🔧 Function Name: userranks`);
+      console.log(`📊 ABI Function: userranks(address)`);
+
+      // 📡 Contract call logging
+      console.log(`\n🚀 Executing contract call...`);
       const rank = (await readContract(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
@@ -1728,10 +1743,87 @@ export const dwcContractInteractions: DWCContractInteractions = {
         args: [user],
         chainId: TESTNET_CHAIN_ID,
       })) as bigint;
-      console.log(`User rank for ${user}: ${rank}`);
-      return { rank };
+
+      const endTime = Date.now();
+      const executionTime = endTime - startTime;
+
+      // 📈 Success logging with detailed analysis
+      console.log(`\n✅ Contract call successful!`);
+      console.log(`📊 Raw Rank Value: ${rank}`);
+      console.log(`🔢 Rank as Number: ${Number(rank)}`);
+      console.log(`⏱️ Execution Time: ${executionTime}ms`);
+
+      // 🏅 Rank interpretation
+      const rankNumber = Number(rank);
+      const rankLabels = {
+        0: 'Holder',
+        1: 'Expert',
+        2: 'Star',
+        3: 'Two Star',
+        4: 'Three Star',
+        5: 'Five Star'
+      };
+      const rankLabel = rankLabels[rankNumber] || 'Unknown Rank';
+
+      console.log(`🏆 Rank Label: ${rankLabel}`);
+      console.log(`📈 Rank Level: ${rankNumber}/5`);
+
+      // 📊 Performance metrics
+      console.log(`\n📊 Performance Metrics:`);
+      console.log(`  ⚡ Response Time: ${executionTime}ms`);
+      console.log(`  🎯 Status: SUCCESS`);
+      console.log(`  📡 Network: BSC Testnet`);
+      console.log(`  🔗 Block Chain: ${TESTNET_CHAIN_ID}`);
+
+      // 🎯 Return value logging
+      const result = { rank };
+      console.log(`\n🎯 Return Value:`, result);
+      console.log(`📤 Function completed successfully`);
+      console.groupEnd();
+
+      return result;
+
     } catch (error: any) {
-      console.error(`Error fetching user rank: ${error.message || error}`);
+      const endTime = Date.now();
+      const executionTime = endTime - startTime;
+
+      // ❌ Error logging with comprehensive details
+      console.log(`\n❌ Contract call failed!`);
+      console.error(`🚨 Error Type: ${error.constructor.name}`);
+      console.error(`💬 Error Message: ${error.message || 'Unknown error'}`);
+      console.error(`🔢 Error Code: ${error.code || 'N/A'}`);
+      console.error(`⏱️ Failed After: ${executionTime}ms`);
+
+      // 🔍 Detailed error analysis
+      console.group(`🔍 Error Analysis:`);
+      console.error(`📍 Contract: ${DWC_CONTRACT_ADDRESS}`);
+      console.error(`👤 User: ${user}`);
+      console.error(`🌐 Chain: ${TESTNET_CHAIN_ID}`);
+      console.error(`🔧 Function: userranks`);
+
+      if (error.cause) {
+        console.error(`🔗 Error Cause:`, error.cause);
+      }
+
+      if (error.data) {
+        console.error(`📊 Error Data:`, error.data);
+      }
+
+      if (error.stack) {
+        console.error(`📚 Stack Trace:`, error.stack);
+      }
+
+      // 🛠️ Troubleshooting suggestions
+      console.log(`\n🛠️ Troubleshooting Suggestions:`);
+      console.log(`  1. ✅ Check wallet connection`);
+      console.log(`  2. 🌐 Verify network (BSC Testnet)`);
+      console.log(`  3. 📍 Confirm contract address`);
+      console.log(`  4. 👤 Validate user address format`);
+      console.log(`  5. 🔄 Try refreshing the page`);
+
+      console.groupEnd();
+      console.groupEnd();
+
       throw error;
     }
   },

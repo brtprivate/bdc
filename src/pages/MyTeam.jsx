@@ -93,15 +93,18 @@ const MyTeam = () => {
         return;
       }
 
+      console.log('🏆 MyTeam: Fetching team data and user rank...');
       const [teamCount, userRank] = await Promise.all([
         dwcContractInteractions.getTeamCount(wallet.account),
-        dwcContractInteractions.getUserRank(wallet.account),
+        dwcContractInteractions.getUserRank(wallet.account), // 🏆 Enhanced logging will trigger
       ]);
 
+      console.log('✅ MyTeam: Data fetch completed');
       if (process.env.NODE_ENV === 'development') {
         console.log('Team Count:', teamCount);
         console.log('User Rank:', userRank);
       }
+      console.log('🏆 MyTeam: User Rank Result:', userRank);
 
       const levels = [];
       const currentUserRank = Number(userRank.rank) || 0;
