@@ -186,7 +186,7 @@ const ContractStatsSection = () => {
         totalSupply: parseFloat(formatUnits(totalSupply, 18)),
         burnedTokens: parseFloat(formatUnits(burnedTokens, 18)),
         lastUserId: Number(lastUserId),
-        userRank: getRankLabel(Number(userRank.rank) - 1),
+        userRank: getRankLabel(Number(userRank.rank)),
         user: userRank,
         totalDeposit: parseFloat(formatUnits(userInfo.totalDeposit, 18)),
         maxPayout: parseFloat(formatUnits(maxPayout, 18)),
