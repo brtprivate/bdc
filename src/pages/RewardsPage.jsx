@@ -527,7 +527,7 @@ const RewardsPage = () => {
               <TableBody>
                 {[
                   { type: 'Stack Bonus', amount: rewardsData.retentionBonus },
-                  { type: 'Released Stack Bonus', amount: rewardsData.releasedRetentionBonus },
+                  { type: 'Earning Bonus', amount: rewardsData.releasedRetentionBonus },
                   { type: 'Team Withdrawal Bonus', amount: rewardsData.residualBonus },
                   { type: 'Team Referral Bonus', amount: rewardsData.levelIncome },
                   { type: 'Royalty Bonus', amount: rewardsData.royaltyIncome },

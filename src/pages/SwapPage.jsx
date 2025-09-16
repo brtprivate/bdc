@@ -17,23 +17,27 @@ import { useWallet } from '../context/WalletContext';
 import { dwcContractInteractions } from '../services/contractService';
 import { formatUnits, parseUnits } from 'viem';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import { Flame } from 'lucide-react';
 
 const SwapPage = () => {
   const wallet = useWallet();
+
+  // Swap state
   const [dwcAmount, setDwcAmount] = useState('');
   const [daiAmount, setDaiAmount] = useState('');
   const [dwcBalance, setDwcBalance] = useState(0);
   const [usdtBalance, setUsdtBalance] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState("");
-  const [isApproving, setIsApproving] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
+
+  // Burned tokens display
+  const [burnedTokens, setBurnedTokens] = useState(0);
 
   useEffect(() => {
     if (wallet.isConnected && wallet.account) {
       fetchBalance();
+      fetchBurnedTokens();
     }
   }, [wallet.isConnected, wallet.account]);
 
@@ -46,6 +50,15 @@ const SwapPage = () => {
     } catch (err) {
       console.error('Error fetching balance:', err);
       setError('Failed to fetch balance');
+    }
+  };
+
+  const fetchBurnedTokens = async () => {
+    try {
+      const burned = await dwcContractInteractions.getBurnedTokens();
+      setBurnedTokens(parseFloat(formatUnits(burned, 18)));
+    } catch (err) {
+      console.error('Error fetching burned tokens:', err);
     }
   };
 
@@ -63,22 +76,6 @@ const SwapPage = () => {
       }
     } else {
       setDaiAmount('');
-    }
-  };
-
-  const handleApprove = async () => {
-    if (!dwcAmount || isNaN(dwcAmount)) return;
-    setIsApproving(true);
-    setError('');
-    try {
-      const amount = parseUnits(dwcAmount, 18);
-      await dwcContractInteractions.approveDWC(amount, wallet.account);
-      setError('Approval successful');
-    } catch (err) {
-      console.error('Approval failed:', err);
-      setError('Approval failed: ' + err.message);
-    } finally {
-      setIsApproving(false);
     }
   };
 
@@ -105,138 +102,311 @@ const SwapPage = () => {
 
   if (!wallet.isConnected) {
     return (
-      <Container maxWidth="md" sx={{ mt: 4 }}>
-        <Alert severity="warning">Please connect your wallet to access the swap page.</Alert>
+      <Container maxWidth="md" sx={{ mt: 4, px: 3 }}>
+        <Alert
+          severity="warning"
+          sx={{
+            fontSize: '1rem',
+            fontWeight: 500,
+            '& .MuiAlert-message': {
+              fontSize: '1rem',
+              fontWeight: 500
+            }
+          }}
+        >
+          Please connect your wallet to access the token operations page.
+        </Alert>
       </Container>
     );
   }
 
   return (
-
     <Container
       fullWidth
-      maxWidth="md"
-
+      maxWidth="lg"
       sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "80vh",
+        py: 4,
+        px: { xs: 2, sm: 3 },
       }}
     >
-      <Card sx={{ p: 4, borderRadius: 3, boxShadow: 4 }}>
-        <Typography variant="h5" sx={{ mb: 3, fontWeight: 'bold', textAlign: 'center' }}>
-          Swap BDC → USDT
-        </Typography>
+      {/* Burned Tokens Small Card */}
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'center' }}>
+        <Card sx={{
+          px: 3,
+          py: 2,
+          borderRadius: 3,
+          boxShadow: 3,
+          background: 'linear-gradient(135deg, #ffebee 0%, #fce4ec 100%)',
+          border: '1px solid',
+          borderColor: 'error.light',
+          maxWidth: 400,
+          width: '100%'
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Flame size={24} style={{ color: '#d32f2f', marginRight: '12px' }} />
+            <Box sx={{ textAlign: 'center' }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  color: 'error.dark',
+                  mb: 0.5
+                }}
+              >
+                Total Burned
+              </Typography>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                  color: 'error.main',
+                  fontSize: '1.25rem',
+                  lineHeight: 1
+                }}
+              >
+                {burnedTokens.toLocaleString(undefined, {
+                  maximumFractionDigits: 0,
+                  minimumFractionDigits: 0
+                })} BDC
+              </Typography>
+            </Box>
+          </Box>
+        </Card>
+      </Box>
 
-        {/* Input: DWC */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            From (BDC)
-          </Typography>
-          <TextField
-            fullWidth
-            type="number"
-            value={dwcAmount}
-            onChange={(e) => handleAmountChange(e.target.value)}
-            placeholder="0.00"
-            InputProps={{
-              endAdornment: (
-                <Button
-                  size="small"
-                  onClick={() => handleAmountChange(dwcBalance.toString())}
-                  // onClick={() => setDwcAmount(dwcBalance.toString())}
-                  sx={{ ml: 1 }}
+      <Grid container spacing={4} justifyContent="center">
+        {/* Swap Card */}
+        <Grid item xs={12} md={8} lg={6}>
+          <Card sx={{
+            p: { xs: 3, sm: 4 },
+            borderRadius: 4,
+            boxShadow: 6,
+            height: 'fit-content'
+          }}>
+            {/* Header with improved typography */}
+            <Typography
+              variant="h5"
+              sx={{
+                mb: 1,
+                fontWeight: 700,
+                textAlign: 'center',
+                fontSize: { xs: '1.5rem', sm: '1.75rem' },
+                letterSpacing: '-0.02em',
+                background: 'linear-gradient(45deg, #6200ea 30%, #00bcd4 90%)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              Swap BDC → USDT
+            </Typography>
+
+            <Typography
+              variant="body1"
+              sx={{
+                mb: 4,
+                textAlign: 'center',
+                color: 'text.secondary',
+                fontSize: '1rem',
+                fontWeight: 400,
+              }}
+            >
+              Exchange your BDC tokens for USDT
+            </Typography>
+
+            {/* Input: DWC */}
+            <Box sx={{ mb: 3 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  mb: 1.5,
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  color: 'text.primary'
+                }}
+              >
+                From (BDC)
+              </Typography>
+              <TextField
+                fullWidth
+                type="number"
+                value={dwcAmount}
+                onChange={(e) => handleAmountChange(e.target.value)}
+                placeholder="0.00"
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <Button
+                        size="small"
+                        onClick={() => handleAmountChange(dwcBalance.toString())}
+                        sx={{
+                          ml: 1,
+                          fontWeight: 600,
+                          fontSize: '0.875rem'
+                        }}
+                      >
+                        Max
+                      </Button>
+                    ),
+                  }
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    fontSize: '1.1rem',
+                    fontWeight: 500,
+                  }
+                }}
+              />
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: 1,
+                  display: 'block',
+                  color: 'text.secondary',
+                  fontSize: '0.875rem',
+                  fontWeight: 500
+                }}
+              >
+                Balance: {dwcBalance.toFixed(4)} BDC
+              </Typography>
+            </Box>
+
+            {/* Swap Icon */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
+              <Box sx={{
+                p: 2,
+                borderRadius: '50%',
+                backgroundColor: 'primary.main',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <SwapHorizIcon sx={{ fontSize: 28 }} />
+              </Box>
+            </Box>
+
+            {/* Output: USDT */}
+            <Box sx={{ mb: 4 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  mb: 1.5,
+                  fontWeight: 600,
+                  fontSize: '1rem',
+                  color: 'text.primary'
+                }}
+              >
+                To (USDT)
+              </Typography>
+              <TextField
+                fullWidth
+                disabled
+                value={daiAmount ? parseFloat(daiAmount).toFixed(4) : '0.0000'}
+                placeholder="0.00"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    fontSize: '1.1rem',
+                    fontWeight: 500,
+                    backgroundColor: 'action.hover',
+                  }
+                }}
+              />
+              <Typography
+                variant="body2"
+                sx={{
+                  mt: 1,
+                  display: 'block',
+                  color: 'text.secondary',
+                  fontSize: '0.875rem',
+                  fontWeight: 500
+                }}
+              >
+                Balance: {usdtBalance.toFixed(4)} USDT
+              </Typography>
+            </Box>
+
+            {/* Actions */}
+            {error && (
+              <Alert
+                severity={error.includes('successful') ? 'success' : 'error'}
+                sx={{
+                  mb: 3,
+                  '& .MuiAlert-message': {
+                    fontSize: '0.875rem',
+                    fontWeight: 500
+                  }
+                }}
+              >
+                {error}
+              </Alert>
+            )}
+            {successMessage && (
+              <Alert
+                severity="success"
+                sx={{
+                  mb: 3,
+                  '& .MuiAlert-message': {
+                    fontSize: '0.875rem',
+                    fontWeight: 500
+                  }
+                }}
+              >
+                Successfully swapped! Transaction:
+                <a
+                  href={`https://testnet.bscscan.com/tx/${successMessage}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: '#1976d2',
+                    textDecoration: 'underline',
+                    fontWeight: 600,
+                    marginLeft: '4px'
+                  }}
                 >
-                  Max
-                </Button>
-              ),
-            }}
-          />
-          <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: 'text.secondary' }}>
-            Balance: {dwcBalance.toFixed(4)} BDC
-          </Typography>
-        </Box>
+                  {`${successMessage.slice(0, 6)}...${successMessage.slice(-4)}`}
+                </a>
+              </Alert>
+            )}
 
-        {/* Swap Icon */}
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-          <SwapHorizIcon sx={{ fontSize: 32, color: 'primary.main' }} />
-        </Box>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={handleSwap}
+                disabled={isSwapping || !dwcAmount || parseFloat(dwcAmount) > dwcBalance}
+                startIcon={isSwapping ? <CircularProgress size={20} /> : <SwapHorizIcon />}
+                sx={{
+                  py: 1.5,
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  borderRadius: 2,
+                }}
+              >
+                {isSwapping ? 'Swapping...' : 'Swap Tokens'}
+              </Button>
+            </Box>
 
-        {/* Output: DAI */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            To (USDT)
-          </Typography>
-          <TextField
-            fullWidth
-            disabled
-            value={daiAmount ? parseFloat(daiAmount).toFixed(4) : '0.0000'}
-            placeholder="0.00"
-          />
-          <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: 'text.secondary' }}>
-            Balance: {usdtBalance.toFixed(4)} USDT
-          </Typography>
-        </Box>
-
-        {/* Actions */}
-        {error && (
-          <Alert severity={error.includes('successful') ? 'success' : 'error'} sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        {successMessage && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            Successfully withdrawn reward! Transaction:
-            <a href={`https://testnet.bscscan.com/tx/${successMessage}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#1976d2', textDecoration: 'underline' }}>
-              {`${successMessage.slice(0, 6)}...${successMessage.slice(-4)}`}
-            </a>
-          </Alert>
-        )}
-
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          {/* <Button
-            variant="outlined"
-            fullWidth
-            onClick={handleApprove}
-            disabled={isApproving || !dwcAmount}
-            </a>`
-          </Alert>
-        )}
-
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          {/* <Button
-            variant="outlined"
-            fullWidth
-            onClick={handleApprove}
-            disabled={isApproving || !dwcAmount}
-            startIcon={isApproving ? <CircularProgress size={20} /> : null}
-          >
-            {isApproving ? 'Approving...' : 'Approve'}
-          </Button> */}
-          <Button
-            variant="contained"
-            fullWidth
-            onClick={handleSwap}
-            disabled={isSwapping || !dwcAmount || parseFloat(dwcAmount) > dwcBalance}
-            startIcon={isSwapping ? <CircularProgress size={20} /> : null}
-          >
-            {isSwapping ? 'Swapping...' : 'Swap'}
-          </Button>
-        </Box>
-
-        {parseFloat(dwcAmount) > dwcBalance && (
-          <Alert severity="warning" sx={{ mt: 2 }}>
-            Insufficient BDC balance
-          </Alert>
-        )}
-      </Card>
+            {parseFloat(dwcAmount) > dwcBalance && (
+              <Alert
+                severity="warning"
+                sx={{
+                  mt: 2,
+                  '& .MuiAlert-message': {
+                    fontSize: '0.875rem',
+                    fontWeight: 500
+                  }
+                }}
+              >
+                Insufficient BDC balance
+              </Alert>
+            )}
+          </Card>
+        </Grid>
+      </Grid>
     </Container>
-
-
   );
 };
 
