@@ -17,13 +17,13 @@ import { useWallet } from '../../context/WalletContext';
 import { useChainId, useSwitchChain } from 'wagmi';
 import { formatUnits, decodeErrorResult } from 'viem';
 import { useBalance } from 'wagmi';
-import { TESTNET_CHAIN_ID, dwcContractInteractions, USDC_ABI } from '../../services/contractService';
+import { MAINNET_CHAIN_ID, dwcContractInteractions, USDC_ABI } from '../../services/contractService';
 
 // Icons
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import BnbIcon from '../icons/BnbIcon';
 import {
-  Coins,
-  DollarSign,
+  CircleDollarSign,
   Gem,
   Users,
   Waves,
@@ -31,7 +31,7 @@ import {
   Share2,
   UserCheck,
   Flame,
-  Award,
+  Trophy,
   Shield
 } from 'lucide-react';
 
@@ -110,7 +110,7 @@ const ContractStatsSection = () => {
   // Fetch BNB balance
   const { data: bnbBalance } = useBalance({
     address: wallet.account,
-    chainId: TESTNET_CHAIN_ID,
+    chainId: MAINNET_CHAIN_ID,
   });
 
 
@@ -134,11 +134,11 @@ const ContractStatsSection = () => {
       return;
     }
 
-    if (chainId !== TESTNET_CHAIN_ID) {
+    if (chainId !== MAINNET_CHAIN_ID) {
       try {
-        await switchChain({ chainId: TESTNET_CHAIN_ID });
+        await switchChain({ chainId: MAINNET_CHAIN_ID });
       } catch (error) {
-        setError('Please switch to BSC Testnet.');
+        setError('Please switch to BSC Mainnet.');
         return;
       }
     }
@@ -195,7 +195,7 @@ const ContractStatsSection = () => {
         user: userRank,
         totalDeposit: parseFloat(formatUnits(userInfo.totalDeposit, 18)),
         maxPayout: parseFloat(formatUnits(maxPayout, 18)),
-        liquidityPoolFundUSDT: parseFloat(formatUnits(liquidityPool.daiAmount, 18)),
+        liquidityPoolFundUSDT: parseFloat(formatUnits(liquidityPool.usdtAmount, 18)),
         liquidityPoolFund: parseFloat(formatUnits(liquidityPool.tokenAmount, 18)),
         userStatus: userInfo.totalDeposit > 0 ? 'ACTIVE' : 'INACTIVE',
       });
@@ -350,7 +350,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 1.5
               }}>
-                <Coins size={24} style={{ color: '#1976d2', marginRight: '8px' }} />
+                <BnbIcon size={24} style={{ marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   BNB Balance
                 </Typography>
@@ -399,7 +399,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 1.5
               }}>
-                <DollarSign size={24} style={{ color: '#9c27b0', marginRight: '8px' }} />
+                <CircleDollarSign size={24} style={{ color: '#26a69a', marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   USDT Balance
                 </Typography>
@@ -964,7 +964,7 @@ const ContractStatsSection = () => {
                 justifyContent: 'center',
                 mb: 1.5
               }}>
-                <Award size={24} style={{ color: '#0288d1', marginRight: '8px' }} />
+                <Trophy size={24} style={{ color: '#ffd700', marginRight: '8px' }} />
                 <Typography variant="h6" sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}>
                   Your Rank
                 </Typography>

@@ -28,7 +28,7 @@ import { useChainId, useSwitchChain } from 'wagmi';
 import { config } from '../config/web3modal';
 import { useWallet } from '../context/WalletContext';
 import { USDC_CONTRACT_ADDRESS } from '../services/approvalservice';
-import { TESTNET_CHAIN_ID, USDC_ABI, dwcContractInteractions } from '../services/contractService';
+import { MAINNET_CHAIN_ID, USDC_ABI, dwcContractInteractions } from '../services/contractService';
 // import RankLogsDashboard from '../components/sections/RankLogsDashboard';
 // Icons
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -161,11 +161,11 @@ const MLMDashboard = () => {
       return;
     }
 
-    if (chainId !== TESTNET_CHAIN_ID) {
+    if (chainId !== MAINNET_CHAIN_ID) {
       try {
-        await switchChain({ chainId: TESTNET_CHAIN_ID });
+        await switchChain({ chainId: MAINNET_CHAIN_ID });
       } catch (error) {
-        setError('Please switch to BSC Testnet.');
+        setError('Please switch to BSC Mainnet.');
         return;
       }
     }
@@ -269,11 +269,11 @@ const MLMDashboard = () => {
       return;
     }
 
-    if (chainId !== TESTNET_CHAIN_ID) {
+    if (chainId !== MAINNET_CHAIN_ID) {
       try {
-        await switchChain({ chainId: TESTNET_CHAIN_ID });
+        await switchChain({ chainId: MAINNET_CHAIN_ID });
       } catch (error) {
-        setError('Please switch to BSC Testnet.');
+        setError('Please switch to BSC Mainnet.');
         return;
       }
     }
@@ -363,11 +363,11 @@ const MLMDashboard = () => {
       return;
     }
 
-    if (chainId !== TESTNET_CHAIN_ID) {
+    if (chainId !== MAINNET_CHAIN_ID) {
       try {
-        await switchChain({ chainId: TESTNET_CHAIN_ID });
+        await switchChain({ chainId: MAINNET_CHAIN_ID });
       } catch (error) {
-        setError('Please switch to BSC Testnet.');
+        setError('Please switch to BSC Mainnet.');
         return;
       }
     }
@@ -377,19 +377,73 @@ const MLMDashboard = () => {
       setError('');
       setSuccess('');
 
-      const decimals = await readContract(config, {
-        abi: USDC_ABI,
-        address: USDC_CONTRACT_ADDRESS,
-        functionName: 'decimals',
-        chainId: TESTNET_CHAIN_ID,
-      });
-      // const approveAmount = parseUnits('1', Number(decimals));
-      // const approvalTx = await dwcContractInteractions.approveUSDC(approveAmount, wallet.account);
-      // await waitForTransactionReceipt(config, { hash: approvalTx, chainId: TESTNET_CHAIN_ID });
+      // Try to get the first registered user (ID 1) as referrer
+      let refCode = referralCode;
+      if (!refCode) {
+        try {
+          // Get user with ID 1 (first registered user)
+          const firstUser = await dwcContractInteractions.getUserById(1n);
+          console.log(`🔍 First user (ID 1): ${firstUser}`);
 
-      const refCode = referralCode || '0xA841371376190547E54c8Fa72B0e684191E756c7';
-      const registerTx = await dwcContractInteractions.register(refCode, wallet.account);
-      await waitForTransactionReceipt(config, { hash: registerTx, chainId: TESTNET_CHAIN_ID });
+          if (firstUser && firstUser !== '0x0000000000000000000000000000000000000000') {
+            const exists = await dwcContractInteractions.isUserExists(firstUser);
+            if (exists) {
+              refCode = firstUser;
+              console.log(`✅ Using first user as referrer: ${refCode}`);
+            }
+          }
+        } catch (e) {
+          console.log(`❌ Error getting first user:`, e.message);
+        }
+
+        // Fallback to contract address if first user not found
+        if (!refCode) {
+          refCode = '0xa204d59852fabde359aaf4b31b59eb5b0338c312';
+          console.log(`⚠️ Using contract address as referrer: ${refCode}`);
+        }
+      }
+
+      console.log('🚀 Registration attempt with referrer:', refCode);
+      console.log('🚀 User account:', wallet.account);
+
+      // Check if user already exists
+      const userExists = await dwcContractInteractions.isUserExists(wallet.account);
+      console.log('🚀 User already exists:', userExists);
+
+      if (userExists) {
+        setError('User is already registered!');
+        return;
+      }
+
+      // Try simple registration first
+      try {
+        console.log('🚀 Attempting simple registration...');
+        const registerTx = await dwcContractInteractions.register(refCode, wallet.account);
+        await waitForTransactionReceipt(config, { hash: registerTx, chainId: MAINNET_CHAIN_ID });
+        console.log('✅ Simple registration successful!');
+      } catch (regError) {
+        console.log('❌ Simple registration failed');
+        console.error('Registration error:', regError);
+
+        // Try with different referrer (first user ID 1)
+        try {
+          console.log('🚀 Trying with first user as referrer...');
+          const firstUser = await dwcContractInteractions.getUserById(1n);
+          if (firstUser && firstUser !== '0x0000000000000000000000000000000000000000') {
+            const registerTx2 = await dwcContractInteractions.register(firstUser, wallet.account);
+            await waitForTransactionReceipt(config, { hash: registerTx2, chainId: MAINNET_CHAIN_ID });
+            console.log('✅ Registration with first user successful!');
+          } else {
+            throw new Error('First user not found');
+          }
+        } catch (regError2) {
+          console.log('❌ Registration with first user also failed');
+          console.error('Second registration error:', regError2);
+
+          // Last resort: show the actual error to user
+          throw new Error(`Registration failed: ${regError.message || regError}. Please contact support.`);
+        }
+      }
 
       setSuccess(`Registration successful! Transaction: ${registerTx}`);
       setReferralCode('');
@@ -406,9 +460,11 @@ const MLMDashboard = () => {
       } else if (error.message?.includes('User rejected')) {
         setError('Transaction was cancelled by user');
       } else if (error.message?.includes('insufficient')) {
-        setError('Insufficient USDC balance or BNB for gas fees. Ensure you have ~1 USDC and ~0.05 BNB.');
+        setError('Insufficient USDT balance or BNB for gas fees. Please ensure you have enough USDT and ~0.05 BNB.');
       } else if (error.message?.includes('already registered')) {
         setError('Address is already registered');
+      } else if (error.message?.includes('approve')) {
+        setError('Please approve USDT spending first. ' + error.message);
       } else {
         setError(`Failed to register: ${error.message || 'Unknown error'}`);
       }
@@ -423,11 +479,11 @@ const MLMDashboard = () => {
       return;
     }
 
-    if (chainId !== TESTNET_CHAIN_ID) {
+    if (chainId !== MAINNET_CHAIN_ID) {
       try {
-        await switchChain({ chainId: TESTNET_CHAIN_ID });
+        await switchChain({ chainId: MAINNET_CHAIN_ID });
       } catch (error) {
-        setError('Please switch to BSC Testnet.');
+        setError('Please switch to BSC Mainnet.');
         return;
       }
     }
@@ -475,7 +531,7 @@ const MLMDashboard = () => {
 
       await waitForTransactionReceipt(config, {
         hash: txHash,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
 
       setSuccess(`Successfully staked ${amount} ${depositType.toUpperCase()}! TX: ${txHash}`);
@@ -505,11 +561,11 @@ const MLMDashboard = () => {
       return;
     }
 
-    if (chainId !== TESTNET_CHAIN_ID) {
+    if (chainId !== MAINNET_CHAIN_ID) {
       try {
-        await switchChain({ chainId: TESTNET_CHAIN_ID });
+        await switchChain({ chainId: MAINNET_CHAIN_ID });
       } catch (error) {
-        setError('Please switch to BSC Testnet.');
+        setError('Please switch to BSC Mainnet.');
         return;
       }
     }
@@ -520,7 +576,7 @@ const MLMDashboard = () => {
       setSuccess('');
 
       const txHash = await dwcContractInteractions.rewardWithdraw(index, wallet.account);
-      await waitForTransactionReceipt(config, { hash: txHash, chainId: TESTNET_CHAIN_ID });
+      await waitForTransactionReceipt(config, { hash: txHash, chainId: MAINNET_CHAIN_ID });
 
       setSuccess(`Successfully withdrawn reward! Transaction: ${txHash}`);
 

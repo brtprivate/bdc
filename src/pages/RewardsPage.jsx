@@ -20,7 +20,7 @@ import {
 import { useWallet } from '../context/WalletContext';
 import { useChainId, useSwitchChain, useBalance } from 'wagmi';
 import { formatUnits, decodeErrorResult } from 'viem';
-import { TESTNET_CHAIN_ID, dwcContractInteractions, USDC_ABI } from '../services/contractService';
+import { MAINNET_CHAIN_ID, dwcContractInteractions, USDC_ABI } from '../services/contractService';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -32,7 +32,7 @@ const RewardsPage = () => {
   const { switchChain } = useSwitchChain();
   const { data: bnbBalance } = useBalance({
     address: wallet.account,
-    chainId: TESTNET_CHAIN_ID,
+    chainId: MAINNET_CHAIN_ID,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -56,11 +56,11 @@ const RewardsPage = () => {
       return;
     }
 
-    if (chainId !== TESTNET_CHAIN_ID) {
+    if (chainId !== MAINNET_CHAIN_ID) {
       try {
-        await switchChain({ chainId: TESTNET_CHAIN_ID });
+        await switchChain({ chainId: MAINNET_CHAIN_ID });
       } catch (error) {
-        setError('Please switch to BSC Testnet.');
+        setError('Please switch to BSC Mainnet.');
         return;
       }
     }
@@ -119,11 +119,11 @@ const RewardsPage = () => {
       return;
     }
 
-    if (chainId !== TESTNET_CHAIN_ID) {
+    if (chainId !== MAINNET_CHAIN_ID) {
       try {
-        await switchChain({ chainId: TESTNET_CHAIN_ID });
+        await switchChain({ chainId: MAINNET_CHAIN_ID });
       } catch (error) {
-        setError('Please switch to BSC Testnet.');
+        setError('Please switch to BSC Mainnet.');
         return;
       }
     }

@@ -145,7 +145,7 @@ const ReferralIncome: React.FC = () => {
           Referral Income
         </Typography>
         <Alert severity="warning">
-          Please connect your wallet and switch to BSC Testnet to view referral income.
+          Please connect your wallet and switch to BSC Mainnet to view referral income.
         </Alert>
       </Box>
     );

@@ -175,7 +175,7 @@ const TeamStructure: React.FC = () => {
           Team Structure
         </Typography>
         <Alert severity="warning">
-          Please connect your wallet and switch to BSC Testnet to view your team structure.
+          Please connect your wallet and switch to BSC Mainnet to view your team structure.
         </Alert>
       </Box>
     );

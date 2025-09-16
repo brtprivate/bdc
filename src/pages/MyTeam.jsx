@@ -21,7 +21,7 @@ import {
 import { useWallet } from '../context/WalletContext';
 import { useChainId, useSwitchChain } from 'wagmi';
 import { formatUnits, decodeErrorResult } from 'viem';
-import { TESTNET_CHAIN_ID, dwcContractInteractions, USDC_ABI } from '../services/contractService';
+import { MAINNET_CHAIN_ID, dwcContractInteractions, USDC_ABI } from '../services/contractService';
 import PeopleIcon from '@mui/icons-material/People';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -68,11 +68,11 @@ const MyTeam = () => {
       return;
     }
 
-    if (chainId !== TESTNET_CHAIN_ID) {
+    if (chainId !== MAINNET_CHAIN_ID) {
       try {
-        await switchChain({ chainId: TESTNET_CHAIN_ID });
+        await switchChain({ chainId: MAINNET_CHAIN_ID });
       } catch (error) {
-        setError('Please switch to BSC Testnet.');
+        setError('Please switch to BSC Mainnet.');
         return;
       }
     }
@@ -83,9 +83,9 @@ const MyTeam = () => {
       setNotRegistered(false);
 
       const userInfo = await dwcContractInteractions.getUserInfo(wallet.account);
-      if (process.env.NODE_ENV === 'development') {
+
         console.log('User Info:', userInfo);
-      }
+      
       if (!userInfo?.id || userInfo.id === 0n) {
         setError('User not registered. Please register to view your team.');
         setNotRegistered(true);
@@ -179,11 +179,11 @@ const MyTeam = () => {
       return;
     }
 
-    if (chainId !== TESTNET_CHAIN_ID) {
+    if (chainId !== MAINNET_CHAIN_ID) {
       try {
-        await switchChain({ chainId: TESTNET_CHAIN_ID });
+        await switchChain({ chainId: MAINNET_CHAIN_ID });
       } catch (error) {
-        setError('Please switch to BSC Testnet.');
+        setError('Please switch to BSC Mainnet.');
         return;
       }
     }

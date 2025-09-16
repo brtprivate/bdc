@@ -156,7 +156,7 @@ const TeamInvestments: React.FC = () => {
           Team Investments
         </Typography>
         <Alert severity="warning">
-          Please connect your wallet and switch to BSC Testnet to view team investments.
+          Please connect your wallet and switch to BSC Mainnet to view team investments.
         </Alert>
       </Box>
     );

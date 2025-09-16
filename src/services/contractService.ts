@@ -15,25 +15,27 @@ import {
   parseEther,
   parseUnits,
 } from "viem";
-import { bscTestnet } from "wagmi/chains";
+import { bsc } from "wagmi/chains";
 import { config } from "../config/web3modal";
 import {
   USDC_ABI,
+  USDT_CONTRACT_ADDRESS,
   USDC_CONTRACT_ADDRESS,
   usdcContractInteractions,
 } from "./approvalservice";
 
 // Export USDC_ABI for use in other files
 export { USDC_ABI };
-// Contract configuration - BSC Testnet
+// Contract configuration - BSC Mainnet
 export const DWC_CONTRACT_ADDRESS =
-  "0x5A615edDa19368a33aE90cc5eFA47D4bdB4A653b" as Address;
-export const TESTNET_CHAIN_ID = 97;
+  "0xa204d59852fabde359aaf4b31b59eb5b0338c312" as Address;
+export const MAINNET_CHAIN_ID = 56;
+export const TESTNET_CHAIN_ID = MAINNET_CHAIN_ID; // For backward compatibility
 
 // DWC Contract ABI (as provided)
 export const DWC_ABI = [
   {
-    inputs: [{ internalType: "address", name: "_daiAddr", type: "address" }],
+    inputs: [{ internalType: "address", name: "_usdtAddr", type: "address" }],
     stateMutability: "nonpayable",
     type: "constructor",
   },
@@ -194,17 +196,17 @@ export const DWC_ABI = [
     type: "function",
   },
   {
-    inputs: [{ internalType: "uint256", name: "_daiamount", type: "uint256" }],
-    name: "_daiToTokens",
+    inputs: [
+      { internalType: "uint256", name: "_tokenAmount", type: "uint256" },
+    ],
+    name: "_tokensToUsdt",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
   },
   {
-    inputs: [
-      { internalType: "uint256", name: "_tokenAmount", type: "uint256" },
-    ],
-    name: "_tokensTodai",
+    inputs: [{ internalType: "uint256", name: "_usdtamount", type: "uint256" }],
+    name: "_usdtToTokens",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
@@ -271,13 +273,6 @@ export const DWC_ABI = [
     inputs: [],
     name: "creator",
     outputs: [{ internalType: "address", name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "dai",
-    outputs: [{ internalType: "contract IERC20", name: "", type: "address" }],
     stateMutability: "view",
     type: "function",
   },
@@ -380,14 +375,14 @@ export const DWC_ABI = [
   },
   {
     inputs: [],
-    name: "liquidityPool_daiAmount",
+    name: "liquidityPool_tokenAmount",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
   },
   {
     inputs: [],
-    name: "liquidityPool_tokenAmount",
+    name: "liquidityPool_usdtAmount",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
@@ -435,11 +430,11 @@ export const DWC_ABI = [
     name: "orderInfos",
     outputs: [
       { internalType: "uint256", name: "amount", type: "uint256" },
-      { internalType: "uint256", name: "holdingbonus", type: "uint256" },
+      { internalType: "uint256", name: "releaseStackBonus", type: "uint256" },
       { internalType: "uint256", name: "deposit_time", type: "uint256" },
       { internalType: "uint256", name: "reward_time", type: "uint256" },
       { internalType: "bool", name: "isactive", type: "bool" },
-      { internalType: "bool", name: "isdai", type: "bool" },
+      { internalType: "bool", name: "isUsdt", type: "bool" },
     ],
     stateMutability: "view",
     type: "function",
@@ -464,6 +459,16 @@ export const DWC_ABI = [
     inputs: [{ internalType: "uint256", name: "rewardindex", type: "uint256" }],
     name: "rewardWithdraw",
     outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_user", type: "address" },
+      { internalType: "uint256", name: "rewardindex", type: "uint256" },
+    ],
+    name: "stackBonus",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "nonpayable",
     type: "function",
   },
@@ -555,6 +560,13 @@ export const DWC_ABI = [
     type: "function",
   },
   {
+    inputs: [],
+    name: "usdt",
+    outputs: [{ internalType: "contract IERC20", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
     inputs: [{ internalType: "address", name: "", type: "address" }],
     name: "userranks",
     outputs: [{ internalType: "uint256", name: "rank", type: "uint256" }],
@@ -575,7 +587,7 @@ export const DWC_ABI = [
       { internalType: "uint256", name: "reward", type: "uint256" },
       { internalType: "uint256", name: "levelincome", type: "uint256" },
       { internalType: "uint256", name: "roraltyincome", type: "uint256" },
-      { internalType: "uint256", name: "maturityincome", type: "uint256" },
+      { internalType: "uint256", name: "teamWithdrawal", type: "uint256" },
       { internalType: "uint256", name: "totalreward", type: "uint256" },
       { internalType: "uint256", name: "totalwithdraw", type: "uint256" },
       { internalType: "uint256", name: "dayRewardPercents", type: "uint256" },
@@ -676,6 +688,7 @@ interface DWCContractInteractions {
   getUSDCBalance: (account: Address) => Promise<bigint>;
   getDWCBalance: (account: Address) => Promise<bigint>;
   register: (referrer: Address, account: Address) => Promise<`0x${string}`>;
+
   deposit: (amount: string, userAddress: Address) => Promise<`0x${string}`>;
   depositDWC: (amount: string, account: Address) => Promise<`0x${string}`>;
   tokenSwap: (tokenAmount: bigint, account: Address) => Promise<`0x${string}`>;
@@ -732,11 +745,12 @@ interface DWCContractInteractions {
   getActiveCount: (user: Address, rank: bigint) => Promise<bigint>;
   getMaxPayout: (user: Address) => Promise<bigint>;
   getCoinRate: () => Promise<bigint>;
-  daiToTokens: (daiAmount: bigint) => Promise<bigint>;
+  daiToTokens: (usdtAmount: bigint) => Promise<bigint>;
   tokensToDai: (tokenAmount: bigint) => Promise<bigint>;
   isUserExists: (user: Address) => Promise<boolean>;
+  getUserById: (userId: bigint) => Promise<Address>;
   getTotalSupply: () => Promise<bigint>;
-  getLiquidityPool: () => Promise<{ tokenAmount: bigint; daiAmount: bigint }>;
+  getLiquidityPool: () => Promise<{ tokenAmount: bigint; usdtAmount: bigint }>;
   getBurnedTokens: () => Promise<bigint>;
   getAllowance: (owner: Address, spender: Address) => Promise<bigint>;
   isWithdrawActive: () => Promise<boolean>;
@@ -755,9 +769,9 @@ interface DWCContractInteractions {
   getName: () => Promise<string>;
   getSymbol: () => Promise<string>;
   getRank: (rankId: bigint) => Promise<Rank>;
-  getCommunityFundDAIBalance: () => Promise<bigint>;
+  getCommunityFundUSDTBalance: () => Promise<bigint>;
   getCommunityFundDWCBalance: () => Promise<bigint>;
-  getLiquidityPoolDAIBalance: () => Promise<bigint>;
+  getLiquidityPoolUSDTBalance: () => Promise<bigint>;
   getLiquidityPoolDWCBalance: () => Promise<bigint>;
   getWithdrawFee: () => Promise<`0x${string}`>;
   bonusInfos: (user: Address) => Promise<BonusInfo>;
@@ -775,7 +789,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: USDC_CONTRACT_ADDRESS,
         functionName: "approve",
         args: [DWC_CONTRACT_ADDRESS, amount],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -783,13 +797,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: USDC_CONTRACT_ADDRESS,
         functionName: "approve",
         args: [DWC_CONTRACT_ADDRESS, amount],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -810,7 +824,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "approve",
         args: [DWC_CONTRACT_ADDRESS, amount],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -818,13 +832,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "approve",
         args: [DWC_CONTRACT_ADDRESS, amount],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -839,14 +853,14 @@ export const dwcContractInteractions: DWCContractInteractions = {
     try {
       console.log(`🔍 Fetching USDC balance for account: ${account}`);
       console.log(`📍 Using USDC contract: ${USDC_CONTRACT_ADDRESS}`);
-      console.log(`🌐 Using chain ID: ${TESTNET_CHAIN_ID}`);
+      console.log(`🌐 Using chain ID: ${MAINNET_CHAIN_ID}`);
 
       const balance = (await readContract(config, {
         abi: USDC_ABI,
         address: USDC_CONTRACT_ADDRESS,
         functionName: "balanceOf",
         args: [account],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
 
       const formattedBalance = formatEther(balance);
@@ -865,7 +879,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         code: error.code,
         data: error.data,
         contractAddress: USDC_CONTRACT_ADDRESS,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
         account: account,
       });
       throw new Error(
@@ -878,14 +892,14 @@ export const dwcContractInteractions: DWCContractInteractions = {
     try {
       console.log(`🔍 Fetching DWC balance for account: ${account}`);
       console.log(`📍 Using DWC contract: ${DWC_CONTRACT_ADDRESS}`);
-      console.log(`🌐 Using chain ID: ${TESTNET_CHAIN_ID}`);
+      console.log(`🌐 Using chain ID: ${MAINNET_CHAIN_ID}`);
 
       const balance = (await readContract(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "balanceOf",
         args: [account],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
 
       const formattedBalance = formatEther(balance);
@@ -904,7 +918,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         code: error.code,
         data: error.data,
         contractAddress: DWC_CONTRACT_ADDRESS,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
         account: account,
       });
       throw new Error(
@@ -929,16 +943,16 @@ export const dwcContractInteractions: DWCContractInteractions = {
       if (isUserExists) {
         throw new Error("User already registered");
       }
-      const isReferrerExists = await this.isUserExists(referrer);
-      if (!isReferrerExists) {
-        throw new Error("Referrer does not exist");
-      }
+
+      // Skip referrer validation - let contract handle it
+      console.log(`Proceeding with registration using referrer: ${referrer}`);
+
       const gasEstimate = await estimateGas(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "register",
         args: [referrer],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       // Increase gas limit by 200% to handle reentrancy sentry and set minimum
@@ -950,13 +964,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "register",
         args: [referrer],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: finalGasLimit,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -974,7 +988,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: USDC_ABI,
         address: USDC_CONTRACT_ADDRESS,
         functionName: "decimals",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as number;
       console.log("USDC Decimals:", decimals);
 
@@ -1016,7 +1030,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: USDC_CONTRACT_ADDRESS,
         functionName: "allowance",
         args: [userAddress, DWC_CONTRACT_ADDRESS],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
 
       console.log("Allowance:", formatUnits(allowance, decimals));
@@ -1025,7 +1039,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         const approvalTx = await this.approveUSDC(amountInWei, userAddress);
         await waitForTransactionReceipt(config, {
           hash: approvalTx,
-          chainId: TESTNET_CHAIN_ID,
+          chainId: MAINNET_CHAIN_ID,
         });
       }
 
@@ -1036,7 +1050,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "deposit",
         args: [amountInWei],
-        chain: bscTestnet,
+        chain: bsc,
         account: userAddress,
         // gas: BkigInt(500000), // Optional manual gas limit
       });
@@ -1072,7 +1086,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "decimals",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as number;
       const parsedAmount = parseUnits(amount, decimals);
       if (parsedAmount < MIN_DEPOSIT || parsedAmount > MAX_DEPOSIT) {
@@ -1113,7 +1127,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "allowance",
         args: [account, DWC_CONTRACT_ADDRESS],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
       // if (allowance < parsedAmount) {
       // console.log(`Approving ${amount} DWC for DWC contract`);
@@ -1128,7 +1142,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "depositbdc",
         args: [parsedAmount],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -1136,13 +1150,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "depositbdc",
         args: [parsedAmount],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -1171,13 +1185,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         functionName: "tokenSwap",
         args: [tokenAmount],
         account: walletClient.account, // signer address
-        chainId: TESTNET_CHAIN_ID,
+        chain: bsc,
       });
 
       // ✅ wait for confirmation
       await waitForTransactionReceipt(config, {
         hash: txHash,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
 
       return txHash;
@@ -1279,7 +1293,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "rewardWithdraw",
         args: [rewardIndex],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -1287,13 +1301,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "rewardWithdraw",
         args: [rewardIndex],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -1314,7 +1328,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "burn",
         args: [amount, account],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -1322,13 +1336,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "burn",
         args: [amount, account],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -1365,7 +1379,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "transfer",
         args: [to, value],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -1373,13 +1387,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "transfer",
         args: [to, value],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -1411,7 +1425,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "transferFrom",
         args: [from, to, value],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -1419,13 +1433,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "transferFrom",
         args: [from, to, value],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -1454,7 +1468,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "migrate",
         args: [userAddress, referrerAddress],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -1462,13 +1476,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "migrate",
         args: [userAddress, referrerAddress],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -1489,7 +1503,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "update",
         args: [creator],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -1497,13 +1511,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "update",
         args: [creator],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -1527,7 +1541,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "updateContractROI",
         args: [dayRewardPercents],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -1535,13 +1549,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "updateContractROI",
         args: [dayRewardPercents],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -1565,7 +1579,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "updateContractWithdrawal",
         args: [iswithdraw],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -1573,13 +1587,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "updateContractWithdrawal",
         args: [iswithdraw],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -1606,7 +1620,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "updateUserROI",
         args: [user, dayRewardPercents],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -1614,13 +1628,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "updateUserROI",
         args: [user, dayRewardPercents],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -1647,7 +1661,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "updateUserWithdrawal",
         args: [user, iswithdraw],
-        chain: bscTestnet,
+        chain: bsc,
         account,
       });
       const txHash = await writeContract(config, {
@@ -1655,13 +1669,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "updateUserWithdrawal",
         args: [user, iswithdraw],
-        chain: bscTestnet,
+        chain: bsc,
         account,
         // gas: gasEstimate,
       });
       await waitForTransactionReceipt(config, {
         hash: txHash as `0x${string}`,
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return txHash as `0x${string}`;
     } catch (error: any) {
@@ -1679,7 +1693,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "users",
         args: [user],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as [
         bigint,
         Address,
@@ -1729,7 +1743,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
       console.log(`📋 Function: getUserRank`);
       console.log(`👤 User Address: ${user}`);
       console.log(`📍 Contract Address: ${DWC_CONTRACT_ADDRESS}`);
-      console.log(`🌐 Chain ID: ${TESTNET_CHAIN_ID}`);
+      console.log(`🌐 Chain ID: ${MAINNET_CHAIN_ID}`);
       console.log(`⏰ Start Time: ${timestamp}`);
       console.log(`🔧 Function Name: userranks`);
       console.log(`📊 ABI Function: userranks(address)`);
@@ -1741,7 +1755,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "userranks",
         args: [user],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
 
       const endTime = Date.now();
@@ -1756,14 +1770,14 @@ export const dwcContractInteractions: DWCContractInteractions = {
       // 🏅 Rank interpretation
       const rankNumber = Number(rank);
       const rankLabels = {
-        0: 'Holder',
-        1: 'Expert',
-        2: 'Star',
-        3: 'Two Star',
-        4: 'Three Star',
-        5: 'Five Star'
+        0: "Holder",
+        1: "Expert",
+        2: "Star",
+        3: "Two Star",
+        4: "Three Star",
+        5: "Five Star",
       };
-      const rankLabel = rankLabels[rankNumber] || 'Unknown Rank';
+      const rankLabel = rankLabels[rankNumber] || "Unknown Rank";
 
       console.log(`🏆 Rank Label: ${rankLabel}`);
       console.log(`📈 Rank Level: ${rankNumber}/5`);
@@ -1772,8 +1786,8 @@ export const dwcContractInteractions: DWCContractInteractions = {
       console.log(`\n📊 Performance Metrics:`);
       console.log(`  ⚡ Response Time: ${executionTime}ms`);
       console.log(`  🎯 Status: SUCCESS`);
-      console.log(`  📡 Network: BSC Testnet`);
-      console.log(`  🔗 Block Chain: ${TESTNET_CHAIN_ID}`);
+      console.log(`  📡 Network: BSC Mainnet`);
+      console.log(`  🔗 Block Chain: ${MAINNET_CHAIN_ID}`);
 
       // 🎯 Return value logging
       const result = { rank };
@@ -1782,7 +1796,6 @@ export const dwcContractInteractions: DWCContractInteractions = {
       console.groupEnd();
 
       return result;
-
     } catch (error: any) {
       const endTime = Date.now();
       const executionTime = endTime - startTime;
@@ -1790,15 +1803,15 @@ export const dwcContractInteractions: DWCContractInteractions = {
       // ❌ Error logging with comprehensive details
       console.log(`\n❌ Contract call failed!`);
       console.error(`🚨 Error Type: ${error.constructor.name}`);
-      console.error(`💬 Error Message: ${error.message || 'Unknown error'}`);
-      console.error(`🔢 Error Code: ${error.code || 'N/A'}`);
+      console.error(`💬 Error Message: ${error.message || "Unknown error"}`);
+      console.error(`🔢 Error Code: ${error.code || "N/A"}`);
       console.error(`⏱️ Failed After: ${executionTime}ms`);
 
       // 🔍 Detailed error analysis
       console.group(`🔍 Error Analysis:`);
       console.error(`📍 Contract: ${DWC_CONTRACT_ADDRESS}`);
       console.error(`👤 User: ${user}`);
-      console.error(`🌐 Chain: ${TESTNET_CHAIN_ID}`);
+      console.error(`🌐 Chain: ${MAINNET_CHAIN_ID}`);
       console.error(`🔧 Function: userranks`);
 
       if (error.cause) {
@@ -1816,7 +1829,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
       // 🛠️ Troubleshooting suggestions
       console.log(`\n🛠️ Troubleshooting Suggestions:`);
       console.log(`  1. ✅ Check wallet connection`);
-      console.log(`  2. 🌐 Verify network (BSC Testnet)`);
+      console.log(`  2. 🌐 Verify network (BSC Mainnet)`);
       console.log(`  3. 📍 Confirm contract address`);
       console.log(`  4. 👤 Validate user address format`);
       console.log(`  5. 🔄 Try refreshing the page`);
@@ -1837,7 +1850,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
           address: DWC_CONTRACT_ADDRESS,
           functionName: "userscapping",
           args: [user],
-          chainId: TESTNET_CHAIN_ID,
+          chainId: MAINNET_CHAIN_ID,
         }
       )) as [bigint, bigint, boolean];
       console.log(`User capping for ${user}:`, {
@@ -1860,7 +1873,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
           address: DWC_CONTRACT_ADDRESS,
           functionName: "orderInfos",
           args: [user, index],
-          chainId: TESTNET_CHAIN_ID,
+          chainId: MAINNET_CHAIN_ID,
         })) as [bigint, bigint, bigint, bigint, boolean, boolean];
       console.log(`Order info for ${user} at index ${index}:`, {
         amount,
@@ -1891,7 +1904,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "getOrderLength",
         args: [user],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
       console.log(`Order length for ${user}: ${length}`);
       return length;
@@ -1908,7 +1921,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "getTeamCount",
         args: [user],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as [bigint, bigint];
       console.log(`Team count for ${user}:`, { maxTeam, otherTeam });
       return { maxTeam, otherTeam };
@@ -1925,7 +1938,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "getActiveCount",
         args: [user, rank],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
       console.log(`Active count for ${user} at rank ${rank}: ${activeCount}`);
       return activeCount;
@@ -1942,7 +1955,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "maxPayoutOf",
         args: [user],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
       console.log(`Max payout for ${user}: ${formatEther(maxPayout)}`);
       return maxPayout;
@@ -1958,7 +1971,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "coinRate",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
       console.log(`DWC coin rate: ${formatEther(rate)} USDC per DWC`);
       return rate;
@@ -1968,24 +1981,24 @@ export const dwcContractInteractions: DWCContractInteractions = {
     }
   },
 
-  async daiToTokens(daiAmount: bigint): Promise<bigint> {
+  async daiToTokens(usdtAmount: bigint): Promise<bigint> {
     try {
       const tokenAmount = (await readContract(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
-        functionName: "_daiToTokens",
-        args: [daiAmount],
-        chainId: TESTNET_CHAIN_ID,
+        functionName: "_usdtToTokens",
+        args: [usdtAmount],
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
       console.log(
-        `${formatEther(daiAmount)} USDC converts to ${formatEther(
+        `${formatEther(usdtAmount)} USDT converts to ${formatEther(
           tokenAmount
         )} DWC`
       );
       return tokenAmount;
     } catch (error: any) {
       console.error(
-        `Error converting USDC to tokens: ${error.message || error}`
+        `Error converting USDT to tokens: ${error.message || error}`
       );
       throw error;
     }
@@ -1994,22 +2007,22 @@ export const dwcContractInteractions: DWCContractInteractions = {
   async tokensToDai(tokenAmount: bigint): Promise<bigint> {
     console.log("🚀 ~ tokensToDai ~ tokenAmount:", tokenAmount);
     try {
-      const daiAmount = (await readContract(config, {
+      const usdtAmount = (await readContract(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
-        functionName: "_tokensTodai",
+        functionName: "_tokensToUsdt",
         args: [tokenAmount],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
       console.log(
         `${formatEther(tokenAmount)} DWC converts to ${formatEther(
-          daiAmount
-        )} USDC`
+          usdtAmount
+        )} USDT`
       );
-      return daiAmount;
+      return usdtAmount;
     } catch (error: any) {
       console.error(
-        `Error converting tokens to USDC: ${error.message || error}`
+        `Error converting tokens to USDT: ${error.message || error}`
       );
       throw error;
     }
@@ -2022,7 +2035,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "isUserExists",
         args: [user],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as boolean;
       console.log(`User ${user} exists: ${exists}`);
       return exists;
@@ -2032,13 +2045,30 @@ export const dwcContractInteractions: DWCContractInteractions = {
     }
   },
 
+  async getUserById(userId: bigint): Promise<Address> {
+    try {
+      const userAddress = (await readContract(config, {
+        abi: DWC_ABI,
+        address: DWC_CONTRACT_ADDRESS,
+        functionName: "userList",
+        args: [userId],
+        chainId: MAINNET_CHAIN_ID,
+      })) as Address;
+      console.log(`User ID ${userId} address: ${userAddress}`);
+      return userAddress;
+    } catch (error: any) {
+      console.error(`Error getting user by ID: ${error.message || error}`);
+      return "0x0000000000000000000000000000000000000000" as Address;
+    }
+  },
+
   async getTotalSupply(): Promise<bigint> {
     try {
       const totalSupply = (await readContract(config, {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "totalSupply",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
       console.log(`DWC total supply: ${formatEther(totalSupply)} DWC`);
       return totalSupply;
@@ -2050,34 +2080,34 @@ export const dwcContractInteractions: DWCContractInteractions = {
 
   async getLiquidityPool(): Promise<{
     tokenAmount: bigint;
-    daiAmount: bigint;
+    usdtAmount: bigint;
   }> {
     try {
-      const [tokenAmount, daiAmount] = await Promise.all([
+      const [tokenAmount, usdtAmount] = await Promise.all([
         readContract(config, {
           abi: DWC_ABI,
           address: DWC_CONTRACT_ADDRESS,
           functionName: "liquidityPool_tokenAmount",
-          chainId: TESTNET_CHAIN_ID,
+          chainId: MAINNET_CHAIN_ID,
         }) as Promise<bigint>,
         readContract(config, {
           abi: DWC_ABI,
           address: DWC_CONTRACT_ADDRESS,
-          functionName: "liquidityPool_daiAmount",
-          chainId: TESTNET_CHAIN_ID,
+          functionName: "liquidityPool_usdtAmount",
+          chainId: MAINNET_CHAIN_ID,
         }) as Promise<bigint>,
       ]);
       console.log(
-        "🚀 ~ getLiquidityPool ~ tokenAmount, daiAmount:",
+        "🚀 ~ getLiquidityPool ~ tokenAmount, usdtAmount:",
         tokenAmount,
-        daiAmount
+        usdtAmount
       );
       console.log(
         `Liquidity pool: ${formatEther(tokenAmount)} DWC, ${formatEther(
-          daiAmount
-        )} USDC`
+          usdtAmount
+        )} USDT`
       );
-      return { tokenAmount, daiAmount };
+      return { tokenAmount, usdtAmount };
     } catch (error: any) {
       console.error(`Error fetching liquidity pool: ${error.message || error}`);
       throw error;
@@ -2090,7 +2120,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "_burnToken",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
       console.log(`Burned tokens: ${formatEther(burnedTokens)} DWC`);
       return burnedTokens;
@@ -2107,7 +2137,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "allowance",
         args: [owner, spender],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
       console.log(
         `Allowance for ${owner} to ${spender}: ${formatEther(allowance)} DWC`
@@ -2125,7 +2155,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "Iswithdraw",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as boolean;
       console.log(`Withdraw active: ${isActive}`);
       return isActive;
@@ -2143,7 +2173,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "communityHoldingFund",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as `0x${string}`;
       console.log(`Community holding fund: ${address}`);
       return address;
@@ -2161,7 +2191,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "creator",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as `0x${string}`;
       console.log(`Creator: ${creator}`);
       return creator;
@@ -2177,7 +2207,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "dai",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as `0x${string}`;
       console.log(`USDC address: ${daiAddress}`);
       return daiAddress;
@@ -2193,7 +2223,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "dayRewardPercents",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
       console.log(`Day reward percents: ${percents}`);
       return percents;
@@ -2211,7 +2241,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "decimals",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as number;
       console.log(`Decimals: ${decimals}`);
       return decimals;
@@ -2227,7 +2257,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "bdctokenPool",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as `0x${string}`;
       console.log(`DWC token pool: ${address}`);
       return address;
@@ -2243,7 +2273,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "extraPool",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as `0x${string}`;
       console.log(`Extra pool: ${address}`);
       return address;
@@ -2260,7 +2290,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "feewallet",
         args: [index],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as `0x${string}`;
       console.log(`Fee wallet at index ${index}: ${address}`);
       return address;
@@ -2276,7 +2306,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "id1",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as `0x${string}`;
       console.log(`ID1: ${id1}`);
       return id1;
@@ -2292,7 +2322,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "lastUserId",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as bigint;
       console.log(`Last user ID: ${lastUserId}`);
       return lastUserId;
@@ -2308,7 +2338,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "liquidityPool",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as `0x${string}`;
       console.log(`Liquidity pool address: ${address}`);
       return address;
@@ -2326,7 +2356,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "priceimpactwallet",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as `0x${string}`;
       console.log(`Price impact wallet: ${address}`);
       return address;
@@ -2344,7 +2374,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "name",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as string;
       console.log(`Contract name: ${name}`);
       return name;
@@ -2360,7 +2390,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "symbol",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as string;
       console.log(`Contract symbol: ${symbol}`);
       return symbol;
@@ -2379,7 +2409,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "map_ranks",
         args: [rankId],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as [bigint, bigint, bigint];
       console.log(`Rank ${rankId}:`, { id, activedirect, activeteam });
       return { id, activedirect, activeteam };
@@ -2389,7 +2419,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
     }
   },
 
-  async getCommunityFundDAIBalance(): Promise<bigint> {
+  async getCommunityFundUSDTBalance(): Promise<bigint> {
     try {
       const fundAddress = await this.getCommunityHoldingFund();
       return this.getUSDCBalance(fundAddress);
@@ -2413,13 +2443,13 @@ export const dwcContractInteractions: DWCContractInteractions = {
     }
   },
 
-  async getLiquidityPoolDAIBalance(): Promise<bigint> {
+  async getLiquidityPoolUSDTBalance(): Promise<bigint> {
     try {
       const poolAddress = await this.getLiquidityPoolAddress();
       return this.getUSDCBalance(poolAddress);
     } catch (error: any) {
       console.error(
-        `Error fetching liquidity pool USDC balance: ${error.message || error}`
+        `Error fetching liquidity pool USDT balance: ${error.message || error}`
       );
       throw error;
     }
@@ -2443,7 +2473,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: "withdrawfee",
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as `0x${string}`;
       console.log(`Withdraw fee address: ${address}`);
       return address;
@@ -2462,7 +2492,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
         address: DWC_CONTRACT_ADDRESS,
         functionName: "bonusInfos",
         args: [user],
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       })) as [
         bigint,
         bigint,
@@ -2553,8 +2583,8 @@ export const {
   getName,
   getSymbol,
   getRank,
-  getCommunityFundDAIBalance,
+  getCommunityFundUSDTBalance,
   getCommunityFundDWCBalance,
-  getLiquidityPoolDAIBalance,
+  getLiquidityPoolUSDTBalance,
   getLiquidityPoolDWCBalance,
 } = dwcContractInteractions;

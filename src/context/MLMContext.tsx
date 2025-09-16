@@ -6,7 +6,7 @@ import {
   dwcContractInteractions,
   DWC_CONTRACT_ADDRESS,
   DWC_ABI,
-  TESTNET_CHAIN_ID
+  MAINNET_CHAIN_ID
 } from '../services/contractService';
 import { formatEther, parseEther } from 'viem';
 
@@ -35,8 +35,8 @@ export const MLMProvider: React.FC<MLMProviderProps> = ({ children }) => {
   const [isMLMRegistered, setIsMLMRegistered] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // BSC Testnet chain id is 97
-  const isCorrectNetwork = chain?.id === 97;
+  // BSC Mainnet chain id is 56
+  const isCorrectNetwork = chain?.id === 56;
 
   // Check MLM registration status using contractService
   const checkMLMRegistration = async (): Promise<boolean> => {
@@ -72,7 +72,7 @@ export const MLMProvider: React.FC<MLMProviderProps> = ({ children }) => {
   // Register user with proper error handling using contractService
   const handleRegisterMLM = async (referrerAddress?: string): Promise<boolean> => {
     if (!address || !isCorrectNetwork) {
-      throw new Error('Wallet not connected or wrong network. Please connect your wallet and switch to BSC Testnet.');
+      throw new Error('Wallet not connected or wrong network. Please connect your wallet and switch to BSC Mainnet.');
     }
 
     // Use default referrer if none provided, matching MLMDashboard.tsx
@@ -179,7 +179,7 @@ export const MLMProvider: React.FC<MLMProviderProps> = ({ children }) => {
         abi: DWC_ABI,
         address: DWC_CONTRACT_ADDRESS,
         functionName: 'lastUserId',
-        chainId: TESTNET_CHAIN_ID,
+        chainId: MAINNET_CHAIN_ID,
       });
       return Number(total);
     } catch (error) {

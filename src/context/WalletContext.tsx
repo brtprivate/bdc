@@ -42,8 +42,8 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   const [isRegistered, setIsRegistered] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
 
-  // BSC Testnet chain id is 97
-  const isCorrectNetwork = chain?.id === 97;
+  // BSC Mainnet chain id is 56
+  const isCorrectNetwork = chain?.id === 56;
 
   const connectWallet = async () => {
     try {
@@ -84,7 +84,7 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   const switchToCorrectNetwork = async (): Promise<boolean> => {
     if (!isCorrectNetwork && switchChainAsync) {
       try {
-        await switchChainAsync({ chainId: 97 });
+        await switchChainAsync({ chainId: 56 });
         return true;
       } catch (error) {
         console.error('Error switching network:', error);
