@@ -416,9 +416,10 @@ const MLMDashboard = () => {
       }
 
       // Try simple registration first
+      let registerTx;
       try {
         console.log('🚀 Attempting simple registration...');
-        const registerTx = await dwcContractInteractions.register(refCode, wallet.account);
+        registerTx = await dwcContractInteractions.register(refCode, wallet.account);
         await waitForTransactionReceipt(config, { hash: registerTx, chainId: MAINNET_CHAIN_ID });
         console.log('✅ Simple registration successful!');
       } catch (regError) {
@@ -430,8 +431,8 @@ const MLMDashboard = () => {
           console.log('🚀 Trying with first user as referrer...');
           const firstUser = await dwcContractInteractions.getUserById(1n);
           if (firstUser && firstUser !== '0x0000000000000000000000000000000000000000') {
-            const registerTx2 = await dwcContractInteractions.register(firstUser, wallet.account);
-            await waitForTransactionReceipt(config, { hash: registerTx2, chainId: MAINNET_CHAIN_ID });
+            registerTx = await dwcContractInteractions.register(firstUser, wallet.account);
+            await waitForTransactionReceipt(config, { hash: registerTx, chainId: MAINNET_CHAIN_ID });
             console.log('✅ Registration with first user successful!');
           } else {
             throw new Error('First user not found');
