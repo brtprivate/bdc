@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Responsive Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .grid-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        
+        .grid-item {
+            flex: 1 1 calc(33.333% - 16px);
+            min-width: 250px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .card-content {
+            text-align: center;
+        }
+        
+        .card-title {
+            font-size: 1rem;
+            margin-bottom: 8px;
+            color: #666;
+        }
+        
+        .card-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #1976d2;
+        }
+        
+        .card-subtitle {
+            font-size: 0.875rem;
+            color: #999;
+        }
+        
+        /* Mobile styles - same breakpoint as MyTeam.jsx */
+        @media (max-width: 599px) {
+            .grid-item {
+                flex: 0 0 100% !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                min-width: unset !important;
+            }
+            
+            .card {
+                width: 100% !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+            }
+            
+            .card-content {
+                text-align: center !important;
+            }
+        }
+        
+        .viewport-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="viewport-info" id="viewport-info"></div>
+    
+    <div class="test-container">
+        <h1>Mobile Responsive Test - MyTeam Cards</h1>
+        <p>Resize your browser window or use developer tools to test mobile responsiveness.</p>
+        <p>Cards should display at 100% width when viewport is ≤ 599px wide.</p>
+        
+        <div class="grid-container">
+            <div class="grid-item">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="card-title">Direct Referrals</div>
+                        <div class="card-value">5</div>
+                        <div class="card-subtitle">People directly referred by you</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid-item">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="card-title">Direct Business</div>
+                        <div class="card-value">$1,250.00</div>
+                        <div class="card-subtitle">Business volume from direct referrals</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid-item">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="card-title">Major Performance</div>
+                        <div class="card-value">12</div>
+                        <div class="card-subtitle">Members in your major team</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid-item">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="card-title">Minor Performance</div>
+                        <div class="card-value">8</div>
+                        <div class="card-subtitle">Members in your minor team</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="grid-item">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="card-title">My Team</div>
+                        <div class="card-value">25</div>
+                        <div class="card-subtitle">Total members in your network</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function updateViewportInfo() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const isMobile = width <= 599;
+            document.getElementById('viewport-info').textContent = 
+                `${width}x${height} ${isMobile ? '(MOBILE)' : '(DESKTOP)'}`;
+        }
+        
+        updateViewportInfo();
+        window.addEventListener('resize', updateViewportInfo);
+    </script>
+</body>
+</html>

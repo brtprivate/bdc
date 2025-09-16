@@ -151,7 +151,7 @@ const Navbar: React.FC<NavbarProps> = ({
         <Box
           sx={{
             width: "100%",
-            backgroundColor: "#D32F2F",
+            backgroundColor: "#2da320ff",
             textAlign: "center",
             py: 0.5,
           }}
@@ -247,7 +247,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   }}
                   startIcon={<AccountBalanceWalletIcon />}
                 >
-                  My Holding
+                  My Stacking
                 </Button>
                 <Button
                   color="inherit"
@@ -501,7 +501,7 @@ const Navbar: React.FC<NavbarProps> = ({
             <ListItemIcon sx={{ color: "white", minWidth: 40 }}>
               <AccountBalanceWalletIcon />
             </ListItemIcon>
-            <ListItemText primary="My Holding" sx={{ color: "white" }} />
+            <ListItemText primary="My Stacking" sx={{ color: "white" }} />
           </ListItem>
 
           <ListItem

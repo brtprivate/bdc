@@ -16,6 +16,7 @@ import {
   Card,
   CardContent,
   TableHead,
+  styled,
 } from '@mui/material';
 import { useWallet } from '../context/WalletContext';
 import { useChainId, useSwitchChain, useBalance } from 'wagmi';
@@ -25,6 +26,18 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
+
+// Styled Grid component to enforce mobile-first layout
+const MobileFirstGrid = styled(Grid)(({ theme }) => ({
+  '& .MuiGrid-item': {
+    [theme.breakpoints.down('sm')]: {
+      width: '100% !important',
+      maxWidth: '100% !important',
+      flexBasis: '100% !important',
+      flex: '0 0 100% !important',
+    },
+  },
+}));
 
 const RewardsPage = () => {
   const wallet = useWallet();
@@ -49,6 +62,86 @@ const RewardsPage = () => {
     availableToWithdraw: 0,
     bnbBalance: 0,
   });
+
+  // Inject CSS to ensure mobile-first layout for all cards
+  useEffect(() => {
+    const styleId = 'rewards-mobile-styles';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        @media (max-width: 599px) {
+          /* Force all grid items in rewards section to full width */
+          .rewards-overview-grid .MuiGrid-item {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex-basis: 100% !important;
+            flex: 0 0 100% !important;
+            margin-bottom: 12px !important;
+          }
+
+          /* Ensure all cards take full width and utilize complete horizontal space */
+          .rewards-overview-grid .MuiGrid-item .MuiCard-root {
+            width: 100% !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+          }
+
+          /* Optimize card content layout for mobile */
+          .rewards-overview-grid .MuiCardContent-root {
+            text-align: center !important;
+            padding: 16px !important;
+          }
+
+          /* Maintain horizontal icon and text layout for better mobile UX */
+          .rewards-overview-grid .MuiBox-root {
+            justify-content: center !important;
+            align-items: center !important;
+            margin-bottom: 12px !important;
+          }
+
+          /* Enhanced table responsiveness */
+          .rewards-table .MuiTableContainer-root {
+            width: 100% !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+          }
+
+          /* Container optimizations for full width utilization */
+          .rewards-overview-grid {
+            margin: 0 !important;
+            width: 100% !important;
+          }
+
+          /* Improved typography scaling for mobile readability */
+          .rewards-overview-grid .MuiTypography-h4 {
+            font-size: 1.5rem !important;
+            line-height: 1.3 !important;
+          }
+
+          .rewards-overview-grid .MuiTypography-h6 {
+            font-size: 1rem !important;
+            margin-bottom: 8px !important;
+            line-height: 1.4 !important;
+          }
+
+          /* Ensure proper spacing between cards */
+          .rewards-overview-grid .MuiGrid-container {
+            margin: 0 !important;
+            width: 100% !important;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    return () => {
+      const existingStyle = document.getElementById(styleId);
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+    };
+  }, []);
 
   const fetchRewardsData = async () => {
     if (!wallet.isConnected || !wallet.account) {
@@ -259,7 +352,11 @@ const RewardsPage = () => {
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 2, color: 'primary.main' }}>
             Income Details
           </Typography>
-          <Grid container spacing={2}>
+          <MobileFirstGrid
+            container
+            spacing={{ xs: 1, sm: 2 }}
+            className="rewards-overview-grid"
+          >
             {[
               {
                 icon: <MonetizationOnIcon />,
@@ -297,26 +394,70 @@ const RewardsPage = () => {
                 color: 'secondary.main',
               },
             ].map((card, index) => (
-              <Grid item xs={12} sm={6} md={4} key={`reward-${index}`}>
-                <Card sx={{ p: { xs: 1.5, sm: 2 }, boxShadow: 3, height: '100%' }}>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                      {React.cloneElement(card.icon, { sx: { color: card.color, mr: 1, fontSize: { xs: '1.5rem', sm: '2rem' } } })}
-                      <Typography variant="h6" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+              <Grid
+                item
+                xs={12}
+                sm={6}
+                md={4}
+                key={`reward-${index}`}
+                sx={{
+                  '@media (max-width: 599px)': {
+                    width: '100% !important',
+                    maxWidth: '100% !important',
+                    flexBasis: '100% !important'
+                  }
+                }}
+              >
+                <Card sx={{
+                  p: { xs: 1.5, sm: 2 },
+                  boxShadow: 3,
+                  height: '100%',
+                  '@media (max-width: 599px)': {
+                    width: '100% !important',
+                    margin: '0 !important'
+                  }
+                }}>
+                  <CardContent sx={{
+                    p: { xs: 1, sm: 2 },
+                    '&:last-child': { pb: { xs: 1, sm: 2 } },
+                    textAlign: 'center'
+                  }}>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 1.5
+                    }}>
+                      {React.cloneElement(card.icon, {
+                        sx: {
+                          color: card.color,
+                          mr: 1,
+                          fontSize: { xs: '1.25rem', sm: '1.5rem' }
+                        }
+                      })}
+                      <Typography variant="h6" sx={{
+                        fontSize: { xs: '0.8rem', sm: '0.9rem' }
+                      }}>
                         {card.title}
                       </Typography>
                     </Box>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: card.color, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
+                    <Typography variant="h4" sx={{
+                      fontWeight: 'bold',
+                      color: card.color,
+                      fontSize: { xs: '1.1rem', sm: '1.25rem' }
+                    }}>
                       {card.value}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                    <Typography variant="body2" color="text.secondary" sx={{
+                      fontSize: { xs: '0.7rem', sm: '0.8rem' }
+                    }}>
                       {card.subtitle}
                     </Typography>
                   </CardContent>
                 </Card>
               </Grid>
             ))}
-          </Grid>
+          </MobileFirstGrid>
         </Grid>
 
         <Grid item xs={12}>
@@ -375,7 +516,7 @@ const RewardsPage = () => {
           <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold', mb: 2, color: 'primary.main' }}>
             Income Breakdown
           </Typography>
-          <TableContainer component={Paper} sx={{ boxShadow: 3, overflowX: 'auto' }}>
+          <TableContainer component={Paper} sx={{ boxShadow: 3, overflowX: 'auto' }} className="rewards-table">
             <Table sx={{ minWidth: { xs: 'auto', sm: 650 } }} aria-label="income table">
               <TableHead>
                 <TableRow sx={{ backgroundColor: 'primary.main' }}>
@@ -392,7 +533,7 @@ const RewardsPage = () => {
                   { type: 'Royalty Bonus', amount: rewardsData.royaltyIncome },
                   { type: 'Total Income', amount: rewardsData.totalIncome },
                   { type: 'Total Withdrawn', amount: rewardsData.totalWithdraw },
-                  { type: 'Available to Withdraw', amount: rewardsData.availableToWithdraw },
+                  // { type: 'Available to Withdraw', amount: rewardsData.availableToWithdraw },
                 ].map((row, index) => (
                   <TableRow key={index} sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
                     <TableCell>{row.type}</TableCell>
