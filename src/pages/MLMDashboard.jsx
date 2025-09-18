@@ -788,7 +788,7 @@ const MLMDashboard = () => {
   return (
     <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 }, background: 'linear-gradient(135deg, #f0f4ff 0%, #d9e4ff 100%)', minHeight: '100vh' }}>
       {/* Database Status Component */}
-      <DatabaseStatus compact />
+      {/* <DatabaseStatus compact /> */}
 
       {registrationAlert}
 

@@ -49,6 +49,141 @@ const MobileFirstGrid = styled(Grid)(({ theme }) => ({
   },
 }));
 
+// Optimized Level Card Component
+const LevelCard = React.memo(({ levelData, onViewDetails, formatCurrency }) => {
+  const handleClick = React.useCallback(() => {
+    if (levelData.userCount > 0) {
+      onViewDetails(levelData.level);
+    }
+  }, [levelData.userCount, levelData.level, onViewDetails]);
+
+  const handleKeyDown = React.useCallback((e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && levelData.userCount > 0) {
+      e.preventDefault();
+      onViewDetails(levelData.level);
+    }
+  }, [levelData.userCount, levelData.level, onViewDetails]);
+
+  const handleButtonClick = React.useCallback((e) => {
+    e.stopPropagation();
+    if (levelData.userCount > 0) {
+      onViewDetails(levelData.level);
+    }
+  }, [levelData.userCount, levelData.level, onViewDetails]);
+
+  return (
+    <Card
+      component="article"
+      role="button"
+      tabIndex={levelData.userCount > 0 ? 0 : -1}
+      aria-label={`Level ${levelData.level} with ${levelData.userCount} users`}
+      sx={{
+        p: 2,
+        height: '100%',
+        minHeight: '140px',
+        border: levelData.userCount > 0 ? '2px solid #4caf50' : '1px solid #e0e0e0',
+        background: levelData.userCount > 0
+          ? 'linear-gradient(135deg, #f8f9fa 0%, #e8f5e8 100%)'
+          : 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%)',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+        cursor: levelData.userCount > 0 ? 'pointer' : 'default',
+        willChange: 'transform',
+        '&:hover': levelData.userCount > 0 ? {
+          transform: 'translateY(-2px)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          border: '2px solid #2e7d32'
+        } : {},
+        '&:focus': levelData.userCount > 0 ? {
+          outline: '2px solid #1976d2',
+          outlineOffset: '2px'
+        } : {},
+        '&:active': levelData.userCount > 0 ? {
+          transform: 'translateY(0px)',
+        } : {}
+      }}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
+      {/* Level Header */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 'bold',
+            color: levelData.userCount > 0 ? 'primary.main' : 'text.secondary',
+            fontSize: '1rem'
+          }}
+        >
+          Level {levelData.level}
+        </Typography>
+        <Chip
+          label={levelData.userCount}
+          color={levelData.userCount > 0 ? 'success' : 'default'}
+          size="small"
+          sx={{ fontWeight: 'bold', minWidth: '45px' }}
+        />
+      </Box>
+
+      {/* Level Stats */}
+      <Box sx={{ mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="body2" color="text.secondary">Investment:</Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 'bold',
+              color: levelData.totalInvestment > 0 ? 'secondary.main' : 'text.secondary',
+              fontSize: '0.8rem'
+            }}
+          >
+            {formatCurrency(levelData.totalInvestment)}
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+          <Typography variant="body2" color="text.secondary">Earnings:</Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 'bold',
+              color: levelData.totalEarnings > 0 ? 'success.main' : 'text.secondary',
+              fontSize: '0.8rem'
+            }}
+          >
+            {formatCurrency(levelData.totalEarnings)}
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Action Button */}
+      <Button
+        variant={levelData.userCount > 0 ? "contained" : "outlined"}
+        size="small"
+        fullWidth
+        onClick={handleButtonClick}
+        disabled={levelData.userCount === 0}
+        sx={{
+          fontSize: '0.75rem',
+          py: 0.5,
+          background: levelData.userCount > 0
+            ? 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)'
+            : 'transparent',
+          '&:hover': levelData.userCount > 0 ? {
+            background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
+          } : {},
+          '&:disabled': {
+            opacity: 0.5,
+            color: 'text.secondary'
+          }
+        }}
+      >
+        {levelData.userCount > 0 ? 'View Details' : 'No Users'}
+      </Button>
+    </Card>
+  );
+});
+
+LevelCard.displayName = 'LevelCard';
+
 const MyTeam = () => {
   const wallet = useWallet();
   const chainId = useChainId();
@@ -122,11 +257,46 @@ const MyTeam = () => {
           }
 
           /* Enhanced performance table responsiveness */
-          .my-team-performance-table .MuiTableContainer-root {
+          .my-team-performance-table .MuiTableContainer-root,
+          .my-team-main-cards .MuiTableContainer-root {
             width: 100% !important;
             overflow-x: auto !important;
             -webkit-overflow-scrolling: touch !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
+
+          /* Ensure 21 levels table takes full width */
+          .my-team-main-cards .MuiTable-root {
+            width: 100% !important;
+            min-width: 100% !important;
+            table-layout: fixed !important;
+          }
+
+          /* Responsive table cells for mobile */
+          .my-team-main-cards .MuiTableCell-root {
+            padding: 6px 4px !important;
+            font-size: 0.7rem !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+          }
+
+          /* Ensure table header cells take full width */
+          .my-team-main-cards .MuiTableHead-root .MuiTableCell-root {
+            font-size: 0.75rem !important;
+            font-weight: bold !important;
+          }
+
+          /* Set specific column widths for better distribution */
+          .my-team-main-cards .MuiTableCell-root:nth-child(1) { width: 15% !important; }
+          .my-team-main-cards .MuiTableCell-root:nth-child(2) { width: 12% !important; }
+          .my-team-main-cards .MuiTableCell-root:nth-child(3) { width: 20% !important; }
+          .my-team-main-cards .MuiTableCell-root:nth-child(4) { width: 20% !important; }
+          .my-team-main-cards .MuiTableCell-root:nth-child(5) { width: 13% !important; }
+          .my-team-main-cards .MuiTableCell-root:nth-child(6) { width: 20% !important; }
+
+
 
           /* Container optimizations for full width utilization */
           .my-team-overview-grid {
@@ -152,6 +322,8 @@ const MyTeam = () => {
             width: 100% !important;
           }
         }
+
+
       `;
       document.head.appendChild(style);
     }
@@ -183,55 +355,119 @@ const MyTeam = () => {
       return;
     }
 
+    // Open modal immediately with loading state for better UX
+    setSelectedLevel(level);
+    setModalOpen(true);
     setModalLoading(true);
+    setLevelUsers([]);
+
     try {
       console.log(`🔍 Fetching details for level ${level}`);
 
-      // Use the new direct API endpoint
-      const response = await apiService.getUserReferralTree(wallet.account, 21);
-      console.log('📊 API Response:', response);
+      // Check if we already have the data from teamData.dbLevels
+      const existingLevelData = teamData.dbLevels?.find(l => l.level === level);
+      if (existingLevelData && existingLevelData.users && existingLevelData.users.length > 0) {
+        console.log(`📋 Using cached data for level ${level}`);
 
-      // Check both response.data (API wrapper) and direct response
+        // Use cached data and fetch investments in background
+        const cachedUsers = existingLevelData.users.map(user => ({
+          ...user,
+          investments: [],
+          totalInvestmentAmount: user.totalInvestment || 0
+        }));
+
+        setLevelUsers(cachedUsers);
+        setModalLoading(false);
+
+        // Fetch detailed investment data in background
+        setTimeout(async () => {
+          try {
+            const usersWithInvestments = await Promise.all(
+              existingLevelData.users.slice(0, 10).map(async (user) => { // Limit to first 10 for performance
+                try {
+                  const investmentResponse = await apiService.getUserInvestments(user.userAddress);
+                  const investments = investmentResponse?.data || investmentResponse || [];
+                  return {
+                    ...user,
+                    investments: investments,
+                    totalInvestmentAmount: investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
+                  };
+                } catch (error) {
+                  return {
+                    ...user,
+                    investments: [],
+                    totalInvestmentAmount: user.totalInvestment || 0
+                  };
+                }
+              })
+            );
+            setLevelUsers(usersWithInvestments);
+          } catch (error) {
+            console.log('Background investment fetch failed:', error);
+          }
+        }, 100);
+
+        return;
+      }
+
+      // Fallback to API call if no cached data
+      const response = await apiService.getUserReferralTree(wallet.account, 21);
       const responseData = response.data || response;
 
       if (responseData && responseData.tree && responseData.tree[`level${level}`]) {
         const users = responseData.tree[`level${level}`];
         console.log(`👥 Found ${users.length} users at level ${level}:`, users);
 
-        // Fetch investment details for each user
-        const usersWithInvestments = await Promise.all(
-          users.map(async (user) => {
-            try {
-              const investmentResponse = await apiService.getUserInvestments(user.userAddress);
-              const investments = investmentResponse?.data || investmentResponse || [];
-              return {
-                ...user,
-                investments: investments,
-                totalInvestmentAmount: investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
-              };
-            } catch (error) {
-              console.log(`No investments found for ${user.userAddress}`);
-              return {
-                ...user,
-                investments: [],
-                totalInvestmentAmount: 0
-              };
-            }
-          })
-        );
+        // Show basic user data first
+        const basicUsers = users.map(user => ({
+          ...user,
+          investments: [],
+          totalInvestmentAmount: user.totalInvestment || 0
+        }));
 
-        console.log('💰 Users with investment data:', usersWithInvestments);
-        setLevelUsers(usersWithInvestments);
-        setSelectedLevel(level);
-        setModalOpen(true);
+        setLevelUsers(basicUsers);
+        setModalLoading(false);
+
+        // Fetch investment details for first 10 users only (for performance)
+        if (users.length > 0) {
+          setTimeout(async () => {
+            try {
+              const usersWithInvestments = await Promise.all(
+                users.slice(0, 10).map(async (user) => {
+                  try {
+                    const investmentResponse = await apiService.getUserInvestments(user.userAddress);
+                    const investments = investmentResponse?.data || investmentResponse || [];
+                    return {
+                      ...user,
+                      investments: investments,
+                      totalInvestmentAmount: investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
+                    };
+                  } catch (error) {
+                    return {
+                      ...user,
+                      investments: [],
+                      totalInvestmentAmount: user.totalInvestment || 0
+                    };
+                  }
+                })
+              );
+              setLevelUsers(prev => [
+                ...usersWithInvestments,
+                ...prev.slice(10) // Keep remaining users as-is
+              ]);
+            } catch (error) {
+              console.log('Background investment fetch failed:', error);
+            }
+          }, 100);
+        }
       } else {
-        console.log(`❌ No users found at level ${level}. Response structure:`, response);
+        console.log(`❌ No users found at level ${level}`);
         setError(`No users found at level ${level}`);
+        setModalLoading(false);
       }
     } catch (error) {
       console.error('Error fetching level details:', error);
       setError('Failed to fetch level details: ' + error.message);
-    } finally {
       setModalLoading(false);
     }
   };
@@ -426,14 +662,25 @@ const MyTeam = () => {
     }
   };
 
-  const handleViewLevelDetails = async (level) => {
+  // Memoize formatCurrency function
+  const formatCurrency = React.useCallback((amount = 0) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }, []);
+
+  // Memoize handleViewLevelDetails function
+  const handleViewLevelDetails = React.useCallback(async (level) => {
     if (!wallet.isConnected || !wallet.account) {
       setError('Please connect your wallet to view level details.');
       return;
     }
 
     await fetchLevelDetails(level);
-  };
+  }, [wallet.isConnected, wallet.account]);
 
   useEffect(() => {
     if (wallet.isConnected && wallet.account) {
@@ -441,14 +688,23 @@ const MyTeam = () => {
     }
   }, [wallet.isConnected, wallet.account, chainId]);
 
-  const formatCurrency = (amount = 0) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(amount);
-  };
+  // Memoized calculations for summary cards
+  const activeLevelsCount = React.useMemo(() =>
+    teamData.dbLevels ? teamData.dbLevels.filter(level => level.userCount > 0).length : 0,
+    [teamData.dbLevels]
+  );
+
+  const totalUsersCount = React.useMemo(() =>
+    teamData.dbLevels ? teamData.dbLevels.reduce((sum, level) => sum + level.userCount, 0) : 0,
+    [teamData.dbLevels]
+  );
+
+  const totalInvestmentAmount = React.useMemo(() =>
+    formatCurrency(teamData.dbLevels ? teamData.dbLevels.reduce((sum, level) => sum + level.totalInvestment, 0) : 0),
+    [teamData.dbLevels, formatCurrency]
+  );
+
+
 
   if (!wallet.isConnected) {
     return (
@@ -775,7 +1031,7 @@ const MyTeam = () => {
 
         {/* 21 Levels Team Structure */}
         <Grid item xs={12}>
-          <Card sx={{ p: { xs: 2, sm: 3 }, boxShadow: 3 }} className="my-team-main-cards">
+          <Card sx={{ p: { xs: 1, sm: 2 }, boxShadow: 3, width: '100%' }} className="my-team-main-cards">
             <Typography
               variant="h5"
               gutterBottom
@@ -783,14 +1039,107 @@ const MyTeam = () => {
             >
               21 Levels Team Structure
             </Typography>
-            <TableContainer component={Paper} sx={{ boxShadow: 2, overflowX: 'auto', maxHeight: 600 }}>
-              <Table sx={{ minWidth: { xs: 'auto', sm: 650 } }} aria-label="21 levels table" stickyHeader>
+
+            {/* Summary Cards - Optimized with useMemo */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{
+                  p: 2,
+                  background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                  color: 'white',
+                  transition: 'transform 0.2s ease-in-out',
+                  '&:hover': { transform: 'translateY(-2px)' }
+                }}>
+                  <Typography variant="h6" sx={{ fontSize: '0.9rem', mb: 1, opacity: 0.9 }}>Total Levels</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>21</Typography>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{
+                  p: 2,
+                  background: 'linear-gradient(135deg, #388e3c 0%, #66bb6a 100%)',
+                  color: 'white',
+                  transition: 'transform 0.2s ease-in-out',
+                  '&:hover': { transform: 'translateY(-2px)' }
+                }}>
+                  <Typography variant="h6" sx={{ fontSize: '0.9rem', mb: 1, opacity: 0.9 }}>Active Levels</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                    {activeLevelsCount}
+                  </Typography>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{
+                  p: 2,
+                  background: 'linear-gradient(135deg, #f57c00 0%, #ffb74d 100%)',
+                  color: 'white',
+                  transition: 'transform 0.2s ease-in-out',
+                  '&:hover': { transform: 'translateY(-2px)' }
+                }}>
+                  <Typography variant="h6" sx={{ fontSize: '0.9rem', mb: 1, opacity: 0.9 }}>Total Users</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                    {totalUsersCount}
+                  </Typography>
+                </Card>
+              </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{
+                  p: 2,
+                  background: 'linear-gradient(135deg, #7b1fa2 0%, #ba68c8 100%)',
+                  color: 'white',
+                  transition: 'transform 0.2s ease-in-out',
+                  '&:hover': { transform: 'translateY(-2px)' }
+                }}>
+                  <Typography variant="h6" sx={{ fontSize: '0.9rem', mb: 1, opacity: 0.9 }}>Total Investment</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
+                    {totalInvestmentAmount}
+                  </Typography>
+                </Card>
+              </Grid>
+            </Grid>
+
+            {/* 21 Levels Table */}
+            <TableContainer
+              component={Paper}
+              sx={{
+                boxShadow: 2,
+                overflowX: 'auto',
+                maxHeight: '600px',
+                width: '100%',
+                margin: 0,
+                '& .MuiTable-root': {
+                  width: '100%',
+                  minWidth: '100%'
+                },
+                '&::-webkit-scrollbar': {
+                  width: '8px',
+                  height: '8px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: 'transparent',
+                  borderRadius: '4px',
+                  '&:hover': {
+                    background: 'rgba(0,0,0,0.1)',
+                  },
+                },
+                '&::-webkit-scrollbar-corner': {
+                  background: 'transparent',
+                },
+                scrollbarWidth: 'thin',
+                scrollbarColor: 'transparent transparent',
+              }}
+            >
+              <Table sx={{ width: '100%', minWidth: '100%', tableLayout: 'auto' }} aria-label="21 levels table" stickyHeader>
                 <TableHead>
                   <TableRow sx={{ backgroundColor: 'primary.main' }}>
                     <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }}>Level</TableCell>
                     <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Users</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Total Investment</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Total Earnings</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Investment</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Earnings</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Status</TableCell>
                     <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Action</TableCell>
                   </TableRow>
                 </TableHead>
@@ -801,8 +1150,7 @@ const MyTeam = () => {
                         key={levelData.level}
                         sx={{
                           '&:nth-of-type(odd)': { backgroundColor: 'action.hover' },
-                          cursor: 'pointer',
-                          '&:hover': { backgroundColor: 'primary.light', opacity: 0.1 }
+                          '&:hover': { backgroundColor: 'primary.light', cursor: 'pointer' }
                         }}
                       >
                         <TableCell component="th" scope="row">
@@ -815,35 +1163,64 @@ const MyTeam = () => {
                             label={levelData.userCount}
                             color={levelData.userCount > 0 ? 'success' : 'default'}
                             variant="filled"
-                            sx={{ fontWeight: 'bold', minWidth: '60px' }}
+                            sx={{ fontWeight: 'bold', minWidth: '50px' }}
                           />
                         </TableCell>
                         <TableCell align="center">
-                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'secondary.main' }}>
+                          <Typography variant="body2" sx={{
+                            fontWeight: 'bold',
+                            color: levelData.totalInvestment > 0 ? 'secondary.main' : 'text.secondary'
+                          }}>
                             {formatCurrency(levelData.totalInvestment)}
                           </Typography>
                         </TableCell>
                         <TableCell align="center">
-                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                          <Typography variant="body2" sx={{
+                            fontWeight: 'bold',
+                            color: levelData.totalEarnings > 0 ? 'success.main' : 'text.secondary'
+                          }}>
                             {formatCurrency(levelData.totalEarnings)}
                           </Typography>
                         </TableCell>
                         <TableCell align="center">
-                          <Button
+                          <Chip
+                            label={levelData.userCount > 0 ? 'Active' : 'Inactive'}
+                            color={levelData.userCount > 0 ? 'success' : 'default'}
                             variant="outlined"
                             size="small"
-                            onClick={() => handleViewLevelDetails(levelData.level)}
-                            disabled={levelData.userCount === 0}
-                            sx={{ fontSize: '0.75rem' }}
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Button
+                            variant={levelData.userCount > 0 ? "contained" : "outlined"}
+                            size="small"
+                            onClick={() => levelData.userCount > 0 && handleViewLevelDetails(levelData.level)}
+                            disabled={levelData.userCount === 0 || isLoading}
+                            sx={{
+                              fontSize: '0.75rem',
+                              minWidth: '80px',
+                              background: levelData.userCount > 0
+                                ? 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)'
+                                : 'transparent',
+                              '&:hover': levelData.userCount > 0 ? {
+                                background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
+                              } : {},
+                            }}
                           >
-                            View Details
+                            {levelData.userCount > 0 ? 'View Details' : 'No Users'}
                           </Button>
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
+                    // Fallback: Show 21 empty levels if no data
                     Array.from({ length: 21 }, (_, index) => (
-                      <TableRow key={index + 1}>
+                      <TableRow
+                        key={index + 1}
+                        sx={{
+                          '&:nth-of-type(odd)': { backgroundColor: 'action.hover' }
+                        }}
+                      >
                         <TableCell component="th" scope="row">
                           <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
                             Level {index + 1}
@@ -854,25 +1231,33 @@ const MyTeam = () => {
                             label="0"
                             color="default"
                             variant="filled"
-                            sx={{ fontWeight: 'bold', minWidth: '60px' }}
+                            sx={{ fontWeight: 'bold', minWidth: '50px' }}
                           />
                         </TableCell>
                         <TableCell align="center">
-                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                             {formatCurrency(0)}
                           </Typography>
                         </TableCell>
                         <TableCell align="center">
-                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                             {formatCurrency(0)}
                           </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label="Inactive"
+                            color="default"
+                            variant="outlined"
+                            size="small"
+                          />
                         </TableCell>
                         <TableCell align="center">
                           <Button
                             variant="outlined"
                             size="small"
                             disabled
-                            sx={{ fontSize: '0.75rem' }}
+                            sx={{ fontSize: '0.75rem', minWidth: '80px' }}
                           >
                             No Users
                           </Button>
@@ -1015,7 +1400,7 @@ const MyTeam = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {levelUsers.map((user, userIndex) =>
+                        {levelUsers.map((user) =>
                           user.investments && user.investments.length > 0 ?
                             user.investments.map((investment, invIndex) => (
                               <TableRow
