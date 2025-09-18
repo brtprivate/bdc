@@ -24,11 +24,19 @@ import {
   DialogActions,
   Avatar
 } from '@mui/material';
+import {
+  TeamOverviewSkeleton,
+  LevelsTableSkeleton,
+  SummaryCardsSkeleton,
+  ProgressiveLoader,
+  SmartLoader
+} from '../components/LoadingSkeleton';
 import { useWallet } from '../context/WalletContext';
 import { useChainId, useSwitchChain } from 'wagmi';
 import { formatUnits, decodeErrorResult } from 'viem';
 import { MAINNET_CHAIN_ID, dwcContractInteractions, USDC_ABI } from '../services/contractService';
 import { apiService } from '../services/apiService';
+import { useApiPerformanceMonitor } from '../hooks/usePerformanceMonitor';
 import PeopleIcon from '@mui/icons-material/People';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -36,6 +44,8 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import GroupIcon from '@mui/icons-material/Group';
 import BusinessIcon from '@mui/icons-material/Business';
+import LazyLevelsTable from '../components/LazyLevelsTable';
+import PerformanceMonitor from '../components/PerformanceMonitor';
 
 // Styled Grid component to enforce mobile-first layout
 const MobileFirstGrid = styled(Grid)(({ theme }) => ({
@@ -188,7 +198,17 @@ const MyTeam = () => {
   const wallet = useWallet();
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
+  const {
+    trackApiCall,
+    getTotalTime,
+    getSuccessRate,
+    getPerformanceStats,
+    performanceAlerts,
+    clearAlert
+  } = useApiPerformanceMonitor();
   const [isLoading, setIsLoading] = useState(false);
+  const [isBasicDataLoaded, setIsBasicDataLoaded] = useState(false);
+  const [isDbDataLoaded, setIsDbDataLoaded] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [notRegistered, setNotRegistered] = useState(false);
@@ -348,7 +368,7 @@ const MyTeam = () => {
     }
   };
 
-  // Function to fetch level details
+  // Function to fetch level details - Optimized
   const fetchLevelDetails = async (level) => {
     if (!wallet.isConnected || !wallet.account) {
       setError('Wallet not connected');
@@ -367,9 +387,9 @@ const MyTeam = () => {
       // Check if we already have the data from teamData.dbLevels
       const existingLevelData = teamData.dbLevels?.find(l => l.level === level);
       if (existingLevelData && existingLevelData.users && existingLevelData.users.length > 0) {
-        console.log(`📋 Using cached data for level ${level}`);
+        console.log(`📋 Using cached data for level ${level} (${existingLevelData.users.length} users)`);
 
-        // Use cached data and fetch investments in background
+        // Show cached data immediately
         const cachedUsers = existingLevelData.users.map(user => ({
           ...user,
           investments: [],
@@ -379,92 +399,54 @@ const MyTeam = () => {
         setLevelUsers(cachedUsers);
         setModalLoading(false);
 
-        // Fetch detailed investment data in background
-        setTimeout(async () => {
-          try {
-            const usersWithInvestments = await Promise.all(
-              existingLevelData.users.slice(0, 10).map(async (user) => { // Limit to first 10 for performance
-                try {
-                  const investmentResponse = await apiService.getUserInvestments(user.userAddress);
-                  const investments = investmentResponse?.data || investmentResponse || [];
-                  return {
-                    ...user,
-                    investments: investments,
-                    totalInvestmentAmount: investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
-                  };
-                } catch (error) {
-                  return {
-                    ...user,
-                    investments: [],
-                    totalInvestmentAmount: user.totalInvestment || 0
-                  };
-                }
-              })
-            );
-            setLevelUsers(usersWithInvestments);
-          } catch (error) {
-            console.log('Background investment fetch failed:', error);
-          }
-        }, 100);
-
+        // Skip investment fetching for better performance
+        // Users can see basic info immediately
         return;
       }
 
-      // Fallback to API call if no cached data
-      const response = await apiService.getUserReferralTree(wallet.account, 21);
-      const responseData = response.data || response;
+      // If no cached data, fetch from API
+      console.log(`🚀 No cached data found for level ${level}, fetching from API...`);
 
-      if (responseData && responseData.tree && responseData.tree[`level${level}`]) {
-        const users = responseData.tree[`level${level}`];
-        console.log(`👥 Found ${users.length} users at level ${level}:`, users);
+      try {
+        const response = await apiService.getLevelUsers(level, wallet.account);
 
-        // Show basic user data first
-        const basicUsers = users.map(user => ({
-          ...user,
-          investments: [],
-          totalInvestmentAmount: user.totalInvestment || 0
-        }));
+        if (response.success && response.data) {
+          console.log(`✅ Level ${level} details fetched from API:`, response.data);
 
-        setLevelUsers(basicUsers);
-        setModalLoading(false);
+          // Handle different response formats
+          let users = [];
+          if (response.data.users && Array.isArray(response.data.users)) {
+            users = response.data.users;
+          } else if (Array.isArray(response.data)) {
+            users = response.data;
+          }
 
-        // Fetch investment details for first 10 users only (for performance)
-        if (users.length > 0) {
-          setTimeout(async () => {
-            try {
-              const usersWithInvestments = await Promise.all(
-                users.slice(0, 10).map(async (user) => {
-                  try {
-                    const investmentResponse = await apiService.getUserInvestments(user.userAddress);
-                    const investments = investmentResponse?.data || investmentResponse || [];
-                    return {
-                      ...user,
-                      investments: investments,
-                      totalInvestmentAmount: investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
-                    };
-                  } catch (error) {
-                    return {
-                      ...user,
-                      investments: [],
-                      totalInvestmentAmount: user.totalInvestment || 0
-                    };
-                  }
-                })
-              );
-              setLevelUsers(prev => [
-                ...usersWithInvestments,
-                ...prev.slice(10) // Keep remaining users as-is
-              ]);
-            } catch (error) {
-              console.log('Background investment fetch failed:', error);
-            }
-          }, 100);
+          // Format users data for display
+          const formattedUsers = users.map(user => ({
+            ...user,
+            investments: [],
+            totalInvestmentAmount: user.totalInvestment || 0
+          }));
+
+          setLevelUsers(formattedUsers);
+          setModalLoading(false);
+
+          if (formattedUsers.length === 0) {
+            setError(`No users found at level ${level}`);
+          }
+        } else {
+          console.warn(`⚠️ No data found for level ${level}:`, response);
+          setLevelUsers([]);
+          setModalLoading(false);
+          setError(`No users found at level ${level}`);
         }
-      } else {
-        console.log(`❌ No users found at level ${level}`);
-        setError(`No users found at level ${level}`);
+      } catch (apiError) {
+        console.error(`❌ API call failed for level ${level}:`, apiError);
+        setLevelUsers([]);
         setModalLoading(false);
+        setError(`Failed to fetch level ${level} details: ${apiError.message}`);
       }
+
     } catch (error) {
       console.error('Error fetching level details:', error);
       setError('Failed to fetch level details: ' + error.message);
@@ -489,11 +471,13 @@ const MyTeam = () => {
 
     try {
       setIsLoading(true);
+      setIsBasicDataLoaded(false);
+      setIsDbDataLoaded(false);
       setError('');
       setNotRegistered(false);
 
+      // Step 1: Quick user validation
       const userInfo = await dwcContractInteractions.getUserInfo(wallet.account);
-
       console.log('User Info:', userInfo);
 
       if (!userInfo?.id || userInfo.id === 0n) {
@@ -503,80 +487,52 @@ const MyTeam = () => {
         return;
       }
 
-      console.log('🏆 MyTeam: Fetching team data and user rank...');
+      // Step 2: Load basic blockchain data first (fast)
+      console.log('🏆 MyTeam: Fetching basic team data...');
       const [teamCount, userRank] = await Promise.all([
         dwcContractInteractions.getTeamCount(wallet.account),
-        dwcContractInteractions.getUserRank(wallet.account), // 🏆 Enhanced logging will trigger
+        dwcContractInteractions.getUserRank(wallet.account),
       ]);
 
-      console.log('✅ MyTeam: Data fetch completed');
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Team Count:', teamCount);
-        console.log('User Rank:', userRank);
-      }
-      console.log('🏆 MyTeam: User Rank Result:', userRank);
-
-      const levels = [];
+      console.log('✅ MyTeam: Basic data fetch completed');
       const currentUserRank = Number(userRank.rank) || 0;
-      const maxLevel = 10; // Configurable max level
 
-      for (let level = 1; level <= Math.min(maxLevel, currentUserRank + 1); level++) {
-        try {
-          const [rankData, activeCount, levelEarning] = await Promise.all([
-            dwcContractInteractions.getRank(BigInt(level)),
-            dwcContractInteractions.getActiveCount(wallet.account, BigInt(level)),
-            dwcContractInteractions.getLevelEarning?.(wallet.account, BigInt(level)) || Promise.resolve(0n),
-          ]);
+      // Step 3: Set initial data with blockchain info
+      setTeamData(prevData => ({
+        ...prevData,
+        directReferrals: Number(userInfo.partnersCount) || 0,
+        directBusiness: parseFloat(formatUnits(userInfo.directBusiness || 0n, 18)) || 0,
+        majorTeam: Number(teamCount.maxTeam) || 0,
+        minorTeam: Number(teamCount.otherTeam) || 0,
+        userRank: getRankLabel(currentUserRank),
+        levelIncome: parseFloat(formatUnits(userInfo.levelincome || 0n, 18)) || 0,
+        royaltyIncome: parseFloat(formatUnits(userInfo.royaltyincome || 0n, 18)) || 0,
+        totalTeam: Number(userInfo.teamCount) || 0,
+      }));
 
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`Level ${level} Rank Data:`, rankData);
-            console.log(`Level ${level} Active Count:`, activeCount);
-          }
+      // Mark basic data as loaded
+      setIsBasicDataLoaded(true);
 
-          levels.push({
-            level,
-            rankData,
-            activeCount: Number(activeCount),
-            earning: levelEarning || 0n,
-            status: currentUserRank >= level,
-          });
-        } catch (error) {
-          console.error(`Error fetching data for level ${level}:`, error);
-          levels.push({
-            level,
-            rankData: { id: BigInt(level), activedirect: 0n, activeteam: 0n },
-            activeCount: 0,
-            earning: 0n,
-            status: false,
-          });
-        }
-      }
+      // Step 4: Load database team data in background (slower) with optimized batch size
+      console.log('🌳 Fetching database team data in background...');
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Levels Data:', levels);
-      }
+      // Use smaller batch size for faster initial load, then load more if needed
+      const initialLimit = 50; // Reduced from 100 for faster initial load
 
-      // Fetch database team data
+      // Use Promise.allSettled to prevent one failure from blocking others
+      const [treeResult, statsResult] = await Promise.allSettled([
+        trackApiCall('referralTree', () => apiService.getUserReferralTreeOptimized(wallet.account, 21, initialLimit)),
+        trackApiCall('referralStats', () => apiService.getUserReferralStats(wallet.account))
+      ]);
+
       let referralTree = null;
       let referralStats = null;
       let dbLevels = [];
 
-      try {
-        console.log('🌳 Fetching database team data...');
-
-        // Fetch referral tree (21 levels)
-        const treeResponse = await apiService.getUserReferralTree(wallet.account, 21);
-        if (treeResponse.success) {
-          referralTree = treeResponse.data;
-          console.log('✅ Referral tree fetched:', referralTree);
-        }
-
-        // Fetch referral statistics
-        const statsResponse = await apiService.getUserReferralStats(wallet.account);
-        if (statsResponse.success) {
-          referralStats = statsResponse.data;
-          console.log('✅ Referral stats fetched:', referralStats);
-        }
+      // Process tree data
+      if (treeResult.status === 'fulfilled' && treeResult.value.success) {
+        referralTree = treeResult.value.data;
+        console.log('✅ Referral tree fetched:', referralTree);
 
         // Process database levels (1-21)
         if (referralTree && referralTree.tree) {
@@ -593,28 +549,30 @@ const MyTeam = () => {
             });
           }
         }
-
-        console.log('✅ Database levels processed:', dbLevels);
-
-      } catch (error) {
-        console.error('❌ Error fetching database team data:', error);
-        // Continue with blockchain data even if database fails
+      } else {
+        console.warn('⚠️ Failed to fetch referral tree:', treeResult.status === 'rejected' ? treeResult.reason : 'Unknown error');
       }
 
-      setTeamData({
-        directReferrals: Number(userInfo.partnersCount) || 0,
-        directBusiness: parseFloat(formatUnits(userInfo.directBusiness || 0n, 18)) || 0,
-        majorTeam: Number(teamCount.maxTeam) || 0,
-        minorTeam: Number(teamCount.otherTeam) || 0,
-        userRank: getRankLabel(currentUserRank),
-        levelIncome: parseFloat(formatUnits(userInfo.levelincome || 0n, 18)) || 0,
-        royaltyIncome: parseFloat(formatUnits(userInfo.royaltyincome || 0n, 18)) || 0,
-        totalTeam: Number(userInfo.teamCount) || 0,
-        levels,
+      // Process stats data
+      if (statsResult.status === 'fulfilled' && statsResult.value.success) {
+        referralStats = statsResult.value.data;
+        console.log('✅ Referral stats fetched:', referralStats);
+      } else {
+        console.warn('⚠️ Failed to fetch referral stats:', statsResult.status === 'rejected' ? statsResult.reason : 'Unknown error');
+      }
+
+      // Step 5: Update with complete data
+      setTeamData(prevData => ({
+        ...prevData,
         dbLevels,
         referralTree,
         referralStats,
-      });
+      }));
+
+      // Mark database data as loaded
+      setIsDbDataLoaded(true);
+      console.log('✅ Database levels processed:', dbLevels);
+
     } catch (error) {
       console.error('Error fetching team data:', error);
       let errorMessage = 'Failed to fetch team data. Please try again.';
@@ -682,27 +640,64 @@ const MyTeam = () => {
     await fetchLevelDetails(level);
   }, [wallet.isConnected, wallet.account]);
 
+  // Debounced refresh function to prevent excessive API calls
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const handleRefreshData = React.useCallback(async () => {
+    if (isRefreshing) return; // Prevent multiple simultaneous refreshes
+
+    setIsRefreshing(true);
+    try {
+      // Clear API cache
+      apiService.clearCache();
+
+      // Reset loading states
+      setIsBasicDataLoaded(false);
+      setIsDbDataLoaded(false);
+
+      // Fetch fresh data
+      await fetchTeamData();
+    } finally {
+      // Add a small delay to prevent rapid successive calls
+      setTimeout(() => setIsRefreshing(false), 2000);
+    }
+  }, [isRefreshing]);
+
   useEffect(() => {
     if (wallet.isConnected && wallet.account) {
       fetchTeamData();
     }
   }, [wallet.isConnected, wallet.account, chainId]);
 
-  // Memoized calculations for summary cards
-  const activeLevelsCount = React.useMemo(() =>
-    teamData.dbLevels ? teamData.dbLevels.filter(level => level.userCount > 0).length : 0,
-    [teamData.dbLevels]
-  );
+  // Memoized calculations for summary cards with better performance
+  const summaryStats = React.useMemo(() => {
+    if (!teamData.dbLevels || teamData.dbLevels.length === 0) {
+      return {
+        activeLevelsCount: 0,
+        totalUsersCount: 0,
+        totalInvestmentAmount: formatCurrency(0)
+      };
+    }
 
-  const totalUsersCount = React.useMemo(() =>
-    teamData.dbLevels ? teamData.dbLevels.reduce((sum, level) => sum + level.userCount, 0) : 0,
-    [teamData.dbLevels]
-  );
+    let activeLevels = 0;
+    let totalUsers = 0;
+    let totalInvestment = 0;
 
-  const totalInvestmentAmount = React.useMemo(() =>
-    formatCurrency(teamData.dbLevels ? teamData.dbLevels.reduce((sum, level) => sum + level.totalInvestment, 0) : 0),
-    [teamData.dbLevels, formatCurrency]
-  );
+    for (const level of teamData.dbLevels) {
+      if (level.userCount > 0) {
+        activeLevels++;
+      }
+      totalUsers += level.userCount;
+      totalInvestment += level.totalInvestment;
+    }
+
+    return {
+      activeLevelsCount: activeLevels,
+      totalUsersCount: totalUsers,
+      totalInvestmentAmount: formatCurrency(totalInvestment)
+    };
+  }, [teamData.dbLevels, formatCurrency]);
+
+  const { activeLevelsCount, totalUsersCount, totalInvestmentAmount } = summaryStats;
 
 
 
@@ -787,15 +782,30 @@ const MyTeam = () => {
             My Team
           </Typography>
         </Box>
-        <Button
-          variant="outlined"
-          startIcon={<RefreshIcon />}
-          onClick={fetchTeamData}
-          disabled={isLoading}
-          sx={{ width: { xs: '100%', sm: 'auto' }, fontSize: { xs: '0.875rem', sm: '1rem' } }}
-        >
-          Refresh
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, width: { xs: '100%', sm: 'auto' } }}>
+          {(isLoading || !isDbDataLoaded) && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <CircularProgress size={16} />
+              <Typography variant="caption" color="text.secondary">
+                {!isBasicDataLoaded ? 'Loading basic data...' : 'Loading team data...'}
+              </Typography>
+              {process.env.NODE_ENV === 'development' && getTotalTime() > 0 && (
+                <Typography variant="caption" color="info.main">
+                  ({(getTotalTime() / 1000).toFixed(1)}s)
+                </Typography>
+              )}
+            </Box>
+          )}
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            onClick={handleRefreshData}
+            disabled={isLoading || isRefreshing}
+            sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+          >
+            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={2}>
@@ -808,11 +818,15 @@ const MyTeam = () => {
             >
               Overview
             </Typography>
-            <MobileFirstGrid
-              container
-              spacing={{ xs: 1, sm: 2 }}
-              className="my-team-overview-grid"
+            <ProgressiveLoader
+              isBasicDataLoaded={isBasicDataLoaded}
+              fallback={<TeamOverviewSkeleton />}
             >
+              <MobileFirstGrid
+                container
+                spacing={{ xs: 1, sm: 2 }}
+                className="my-team-overview-grid"
+              >
               {[
                 {
                   icon: <PeopleIcon />,
@@ -956,78 +970,11 @@ const MyTeam = () => {
                   </Card>
                 </Grid>
               ))}
-            </MobileFirstGrid>
+              </MobileFirstGrid>
+            </ProgressiveLoader>
           </Card>
         </Grid>
 
-        {/* <Grid item xs={12}>
-          <Card sx={{ p: { xs: 2, sm: 3 }, boxShadow: 3 }} className="my-team-main-cards">
-            <Typography
-              variant="h5"
-              gutterBottom
-              sx={{ color: 'primary.main', fontWeight: 'bold', mb: { xs: 2, sm: 3 }, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
-            >
-              Performance
-            </Typography>
-            <TableContainer component={Paper} sx={{ boxShadow: 2, overflowX: 'auto' }} className="my-team-performance-table">
-              <Table sx={{ minWidth: { xs: 'auto', sm: 650 } }} aria-label="levels table">
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: 'primary.main' }}>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem' }}>Level</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem' }} align="center">Earnings</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem' }} align="center">Status</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem' }} align="center">Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {teamData.levels && teamData.levels.length > 0 ? (
-                    teamData.levels.map((levelData) => (
-                      <TableRow
-                        key={levelData.level}
-                        sx={{ '&:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}
-                      >
-                        <TableCell component="th" scope="row">
-                          <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                            Level {levelData.level}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          {formatCurrency(parseFloat(formatUnits(levelData.earning || 0n, 18)))}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={levelData.status ? 'Achieved' : 'Pending'}
-                            color={levelData.status ? 'success' : 'warning'}
-                            variant="filled"
-                            sx={{ fontWeight: 'bold' }}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          {levelData.status && (
-                            <Button
-                              variant="contained"
-                              size="small"
-                              onClick={() => handleClaimReward(levelData.level)}
-                              disabled={isLoading}
-                            >
-                              Claim Reward
-                            </Button>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} align="center">
-                        No level data available.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Card>
-        </Grid> */}
 
         {/* 21 Levels Team Structure */}
         <Grid item xs={12}>
@@ -1041,233 +988,75 @@ const MyTeam = () => {
             </Typography>
 
             {/* Summary Cards - Optimized with useMemo */}
-            <Grid container spacing={2} sx={{ mb: 3 }}>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{
-                  p: 2,
-                  background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
-                  color: 'white',
-                  transition: 'transform 0.2s ease-in-out',
-                  '&:hover': { transform: 'translateY(-2px)' }
-                }}>
-                  <Typography variant="h6" sx={{ fontSize: '0.9rem', mb: 1, opacity: 0.9 }}>Total Levels</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>21</Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{
-                  p: 2,
-                  background: 'linear-gradient(135deg, #388e3c 0%, #66bb6a 100%)',
-                  color: 'white',
-                  transition: 'transform 0.2s ease-in-out',
-                  '&:hover': { transform: 'translateY(-2px)' }
-                }}>
-                  <Typography variant="h6" sx={{ fontSize: '0.9rem', mb: 1, opacity: 0.9 }}>Active Levels</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                    {activeLevelsCount}
-                  </Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{
-                  p: 2,
-                  background: 'linear-gradient(135deg, #f57c00 0%, #ffb74d 100%)',
-                  color: 'white',
-                  transition: 'transform 0.2s ease-in-out',
-                  '&:hover': { transform: 'translateY(-2px)' }
-                }}>
-                  <Typography variant="h6" sx={{ fontSize: '0.9rem', mb: 1, opacity: 0.9 }}>Total Users</Typography>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                    {totalUsersCount}
-                  </Typography>
-                </Card>
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <Card sx={{
-                  p: 2,
-                  background: 'linear-gradient(135deg, #7b1fa2 0%, #ba68c8 100%)',
-                  color: 'white',
-                  transition: 'transform 0.2s ease-in-out',
-                  '&:hover': { transform: 'translateY(-2px)' }
-                }}>
-                  <Typography variant="h6" sx={{ fontSize: '0.9rem', mb: 1, opacity: 0.9 }}>Total Investment</Typography>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
-                    {totalInvestmentAmount}
-                  </Typography>
-                </Card>
-              </Grid>
-            </Grid>
-
-            {/* 21 Levels Table */}
-            <TableContainer
-              component={Paper}
-              sx={{
-                boxShadow: 2,
-                overflowX: 'auto',
-                maxHeight: '600px',
-                width: '100%',
-                margin: 0,
-                '& .MuiTable-root': {
-                  width: '100%',
-                  minWidth: '100%'
-                },
-                '&::-webkit-scrollbar': {
-                  width: '8px',
-                  height: '8px',
-                },
-                '&::-webkit-scrollbar-track': {
-                  background: 'transparent',
-                },
-                '&::-webkit-scrollbar-thumb': {
-                  background: 'transparent',
-                  borderRadius: '4px',
-                  '&:hover': {
-                    background: 'rgba(0,0,0,0.1)',
-                  },
-                },
-                '&::-webkit-scrollbar-corner': {
-                  background: 'transparent',
-                },
-                scrollbarWidth: 'thin',
-                scrollbarColor: 'transparent transparent',
-              }}
+            <SmartLoader
+              loading={!isDbDataLoaded}
+              data={teamData.dbLevels}
+              skeleton={<SummaryCardsSkeleton />}
             >
-              <Table sx={{ width: '100%', minWidth: '100%', tableLayout: 'auto' }} aria-label="21 levels table" stickyHeader>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: 'primary.main' }}>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }}>Level</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Users</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Investment</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Earnings</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Status</TableCell>
-                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {teamData.dbLevels && teamData.dbLevels.length > 0 ? (
-                    teamData.dbLevels.map((levelData) => (
-                      <TableRow
-                        key={levelData.level}
-                        sx={{
-                          '&:nth-of-type(odd)': { backgroundColor: 'action.hover' },
-                          '&:hover': { backgroundColor: 'primary.light', cursor: 'pointer' }
-                        }}
-                      >
-                        <TableCell component="th" scope="row">
-                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                            Level {levelData.level}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={levelData.userCount}
-                            color={levelData.userCount > 0 ? 'success' : 'default'}
-                            variant="filled"
-                            sx={{ fontWeight: 'bold', minWidth: '50px' }}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Typography variant="body2" sx={{
-                            fontWeight: 'bold',
-                            color: levelData.totalInvestment > 0 ? 'secondary.main' : 'text.secondary'
-                          }}>
-                            {formatCurrency(levelData.totalInvestment)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Typography variant="body2" sx={{
-                            fontWeight: 'bold',
-                            color: levelData.totalEarnings > 0 ? 'success.main' : 'text.secondary'
-                          }}>
-                            {formatCurrency(levelData.totalEarnings)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={levelData.userCount > 0 ? 'Active' : 'Inactive'}
-                            color={levelData.userCount > 0 ? 'success' : 'default'}
-                            variant="outlined"
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Button
-                            variant={levelData.userCount > 0 ? "contained" : "outlined"}
-                            size="small"
-                            onClick={() => levelData.userCount > 0 && handleViewLevelDetails(levelData.level)}
-                            disabled={levelData.userCount === 0 || isLoading}
-                            sx={{
-                              fontSize: '0.75rem',
-                              minWidth: '80px',
-                              background: levelData.userCount > 0
-                                ? 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)'
-                                : 'transparent',
-                              '&:hover': levelData.userCount > 0 ? {
-                                background: 'linear-gradient(135deg, #1565c0 0%, #1976d2 100%)',
-                              } : {},
-                            }}
-                          >
-                            {levelData.userCount > 0 ? 'View Details' : 'No Users'}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    // Fallback: Show 21 empty levels if no data
-                    Array.from({ length: 21 }, (_, index) => (
-                      <TableRow
-                        key={index + 1}
-                        sx={{
-                          '&:nth-of-type(odd)': { backgroundColor: 'action.hover' }
-                        }}
-                      >
-                        <TableCell component="th" scope="row">
-                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-                            Level {index + 1}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label="0"
-                            color="default"
-                            variant="filled"
-                            sx={{ fontWeight: 'bold', minWidth: '50px' }}
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                            {formatCurrency(0)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                            {formatCurrency(0)}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label="Inactive"
-                            color="default"
-                            variant="outlined"
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            disabled
-                            sx={{ fontSize: '0.75rem', minWidth: '80px' }}
-                          >
-                            No Users
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </TableContainer>
+              <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card sx={{
+                    p: 2,
+                    background: 'linear-gradient(135deg, #1976d2 0%, #42a5f5 100%)',
+                    color: 'white',
+                    transition: 'transform 0.2s ease-in-out',
+                    '&:hover': { transform: 'translateY(-2px)' }
+                  }}>
+                    <Typography variant="h6" sx={{ fontSize: '0.9rem', mb: 1, opacity: 0.9 }}>Total Levels</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 'bold' }}>21</Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card sx={{
+                    p: 2,
+                    background: 'linear-gradient(135deg, #388e3c 0%, #66bb6a 100%)',
+                    color: 'white',
+                    transition: 'transform 0.2s ease-in-out',
+                    '&:hover': { transform: 'translateY(-2px)' }
+                  }}>
+                    <Typography variant="h6" sx={{ fontSize: '0.9rem', mb: 1, opacity: 0.9 }}>Active Levels</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                      {activeLevelsCount}
+                    </Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card sx={{
+                    p: 2,
+                    background: 'linear-gradient(135deg, #f57c00 0%, #ffb74d 100%)',
+                    color: 'white',
+                    transition: 'transform 0.2s ease-in-out',
+                    '&:hover': { transform: 'translateY(-2px)' }
+                  }}>
+                    <Typography variant="h6" sx={{ fontSize: '0.9rem', mb: 1, opacity: 0.9 }}>Total Users</Typography>
+                    <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                      {totalUsersCount}
+                    </Typography>
+                  </Card>
+                </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Card sx={{
+                    p: 2,
+                    background: 'linear-gradient(135deg, #7b1fa2 0%, #ba68c8 100%)',
+                    color: 'white',
+                    transition: 'transform 0.2s ease-in-out',
+                    '&:hover': { transform: 'translateY(-2px)' }
+                  }}>
+                    <Typography variant="h6" sx={{ fontSize: '0.9rem', mb: 1, opacity: 0.9 }}>Total Investment</Typography>
+                    <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1rem' }}>
+                      {totalInvestmentAmount}
+                    </Typography>
+                  </Card>
+                </Grid>
+              </Grid>
+            </SmartLoader>
+
+            {/* Optimized 21 Levels Table */}
+            <LazyLevelsTable
+              dbLevels={teamData.dbLevels}
+              isLoading={!isDbDataLoaded}
+              onViewDetails={handleViewLevelDetails}
+            />
           </Card>
         </Grid>
       </Grid>
@@ -1466,6 +1255,15 @@ const MyTeam = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Performance Monitor */}
+      {/* <PerformanceMonitor
+        performanceAlerts={performanceAlerts}
+        clearAlert={clearAlert}
+        getPerformanceStats={getPerformanceStats}
+        getTotalTime={getTotalTime}
+        getSuccessRate={getSuccessRate}
+      /> */}
     </Container>
   );
 };

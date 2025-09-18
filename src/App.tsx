@@ -23,6 +23,7 @@ import MyHolding from './pages/MyHolding';
 import MyTeam from './pages/MyTeam';
 import SwapPage from './pages/SwapPage';
 import RewardsPage from './pages/RewardsPage';
+import MLMRegister from './pages/MLMRegister';
 
 
 // Theme configuration
@@ -100,7 +101,7 @@ function App() {
           <WalletProvider>
             <ToastProvider>
               <MLMProvider>
-                <Router>
+                <Router basename="/app">
                   <Navbar />
                   <Routes>
                     <Route path="/" element={<MLMDashboard />} />
@@ -108,8 +109,9 @@ function App() {
                     <Route path="/my-team" element={<MyTeam />} />
                     <Route path="/swap" element={<SwapPage />} />
                     <Route path="/rewards" element={<RewardsPage />} />
+                    <Route path="/usd/mlm/register" element={<MLMRegister />} />
 
-                    <Route path="*" element={<Navigate to="/" replace />} />
+                    {/* <Route path="*" element={<Navigate to="/" replace />} /> */}
                   </Routes>
                 </Router>
               </MLMProvider>

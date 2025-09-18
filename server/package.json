@@ -1,0 +1,19 @@
+{
+  "name": "bdc-static-server",
+  "version": "1.0.0",
+  "description": "Static file server for BDC Stack and React app",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["bdc", "static", "server", "express"],
+  "author": "BDC Team",
+  "license": "ISC",
+  "packageManager": "pnpm@10.15.0",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

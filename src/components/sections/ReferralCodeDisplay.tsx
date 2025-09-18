@@ -31,12 +31,12 @@ const ReferralCodeDisplay: React.FC = () => {
 
   // Generate referral link
   const referralLink = wallet.account
-    ? `${window.location.origin}/usd/mlm/register?ref=${wallet.account}`
-    : `${window.location.origin}/usd/mlm/register?ref=${OWNER_ADDRESS}`;
+    ? `${window.location.origin}/app/usd/mlm/register?ref=${wallet.account}`
+    : `${window.location.origin}/app/usd/mlm/register?ref=${OWNER_ADDRESS}`;
 
   const handleCopyAddress = async () => {
     try {
-      const refLink = `${window.location.origin}?ref=${wallet.account}`;
+      const refLink = `${window.location.origin}/app?ref=${wallet.account}`;
       await navigator.clipboard.writeText(refLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);

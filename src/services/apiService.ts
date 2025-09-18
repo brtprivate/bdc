@@ -29,11 +29,40 @@ interface ApiResponse<T> {
 }
 
 class ApiService {
+  private cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+  private readonly DEFAULT_TIMEOUT = 30000; // 30 seconds
+  private readonly CACHE_TTL = 60000; // 1 minute cache
+
+  private getCacheKey(endpoint: string, options: RequestInit = {}): string {
+    return `${endpoint}_${JSON.stringify(options)}`;
+  }
+
+  private isValidCache(cacheEntry: { timestamp: number; ttl: number }): boolean {
+    return Date.now() - cacheEntry.timestamp < cacheEntry.ttl;
+  }
+
   private async makeRequest<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    cacheTTL: number = this.CACHE_TTL
   ): Promise<ApiResponse<T>> {
     try {
+      // Check cache for GET requests
+      if (!options.method || options.method === 'GET') {
+        const cacheKey = this.getCacheKey(endpoint, options);
+        const cached = this.cache.get(cacheKey);
+
+        if (cached && this.isValidCache(cached)) {
+          if (IS_DEVELOPMENT) {
+            console.log(`🎯 Cache Hit: ${endpoint}`);
+          }
+          return {
+            success: true,
+            data: cached.data,
+          };
+        }
+      }
+
       const url = `${API_BASE_URL}${endpoint}`;
 
       // Only log in development
@@ -41,13 +70,20 @@ class ApiService {
         console.log(`🌐 API Request: ${options.method || 'GET'} ${url}`);
       }
 
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), this.DEFAULT_TIMEOUT);
+
       const response = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
         },
+        signal: controller.signal,
         ...options,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -59,18 +95,48 @@ class ApiService {
         };
       }
 
-      console.log(`✅ API Success: ${endpoint}`, data);
+      // Cache successful GET requests
+      if (!options.method || options.method === 'GET') {
+        const cacheKey = this.getCacheKey(endpoint, options);
+        this.cache.set(cacheKey, {
+          data,
+          timestamp: Date.now(),
+          ttl: cacheTTL
+        });
+      }
+
+      if (IS_DEVELOPMENT) {
+        console.log(`✅ API Success: ${endpoint}`);
+      }
       return {
         success: true,
         data,
       };
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error(`⏰ API Timeout: ${endpoint}`);
+        return {
+          success: false,
+          error: 'Request timeout - please try again',
+        };
+      }
       console.error(`❌ API Network Error: ${endpoint}`, error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Network error',
       };
     }
+  }
+
+  // Clear cache method
+  clearCache(): void {
+    this.cache.clear();
+  }
+
+  // Clear specific cache entry
+  clearCacheEntry(endpoint: string, options: RequestInit = {}): void {
+    const cacheKey = this.getCacheKey(endpoint, options);
+    this.cache.delete(cacheKey);
   }
 
   // User Registration
@@ -146,11 +212,12 @@ class ApiService {
     }
   }
 
-  // Get user referral tree (all 21 levels) - Using direct User model
+  // Get user referral tree (all 21 levels) - Using direct User model with caching
   async getUserReferralTree(userAddress: string, levels: number = 21): Promise<ApiResponse<any>> {
     try {
       console.log(`🌳 Fetching referral tree for user: ${userAddress} (${levels} levels)`);
-      const response = await this.makeRequest(`/referrals/tree-direct/${userAddress}?levels=${levels}`);
+      // Use longer cache for tree data (5 minutes) since it doesn't change frequently
+      const response = await this.makeRequest(`/referrals/tree-direct/${userAddress}?levels=${levels}`, {}, 300000);
       console.log(`✅ Referral tree fetched successfully`);
       return response;
     } catch (error) {
@@ -159,11 +226,12 @@ class ApiService {
     }
   }
 
-  // Get user referral statistics - Using direct User model
+  // Get user referral statistics - Using direct User model with caching
   async getUserReferralStats(userAddress: string): Promise<ApiResponse<any>> {
     try {
       console.log(`📈 Fetching referral stats for user: ${userAddress}`);
-      const response = await this.makeRequest(`/referrals/stats-direct/${userAddress}`);
+      // Use longer cache for stats (5 minutes)
+      const response = await this.makeRequest(`/referrals/stats-direct/${userAddress}`, {}, 300000);
       console.log(`✅ Referral stats fetched successfully`);
       return response;
     } catch (error) {
@@ -172,13 +240,43 @@ class ApiService {
     }
   }
 
+  // Get optimized referral tree with pagination
+  async getUserReferralTreeOptimized(userAddress: string, levels: number = 21, limit: number = 50): Promise<ApiResponse<any>> {
+    try {
+      console.log(`🚀 Fetching optimized referral tree for user: ${userAddress} (${levels} levels, limit: ${limit})`);
+      // Try ultra-optimized endpoint first, fallback to regular optimized
+      try {
+        const response = await this.makeRequest(`/referrals/tree-ultra-optimized/${userAddress}?levels=${levels}&limit=${limit}`, {}, 300000);
+        console.log(`✅ Ultra-optimized referral tree fetched successfully`);
+        return response;
+      } catch (ultraError) {
+        console.warn(`⚠️ Ultra-optimized endpoint failed, falling back to regular optimized:`, ultraError);
+        const response = await this.makeRequest(`/referrals/tree-optimized/${userAddress}?levels=${levels}&limit=${limit}`, {}, 300000);
+        console.log(`✅ Optimized referral tree fetched successfully`);
+        return response;
+      }
+    } catch (error) {
+      console.error(`❌ Failed to fetch optimized referral tree:`, error);
+      throw error;
+    }
+  }
+
   // Get users in a specific level
   async getLevelUsers(level: number, referrerAddress: string): Promise<ApiResponse<any>> {
     try {
       console.log(`👥 Fetching level ${level} users for referrer: ${referrerAddress}`);
-      const response = await this.makeRequest(`/levels/${level}/users/${referrerAddress}`);
-      console.log(`✅ Level users fetched successfully`);
-      return response;
+      // Try new optimized endpoint first
+      try {
+        const response = await this.makeRequest(`/referrals/level/${referrerAddress}/${level}`);
+        console.log(`✅ Level users fetched successfully (optimized)`);
+        return response;
+      } catch (optimizedError) {
+        // Fallback to old endpoint
+        console.warn('Optimized endpoint failed, using fallback:', optimizedError);
+        const response = await this.makeRequest(`/levels/${level}/users/${referrerAddress}`);
+        console.log(`✅ Level users fetched successfully (fallback)`);
+        return response;
+      }
     } catch (error) {
       console.error(`❌ Failed to fetch level users:`, error);
       throw error;

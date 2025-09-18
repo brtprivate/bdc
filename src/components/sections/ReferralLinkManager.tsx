@@ -31,7 +31,7 @@ const ReferralLinkManager: React.FC = () => {
 
   // Generate referral link
   const generateReferralLink = (slug?: string) => {
-    const baseUrl = `${window.location.origin}/usd/mlm/register`;
+    const baseUrl = `${window.location.origin}/app/usd/mlm/register`;
     if (slug && slug.trim()) {
       return `${baseUrl}?ref=${wallet.account}&slug=${encodeURIComponent(slug.trim())}`;
     }
