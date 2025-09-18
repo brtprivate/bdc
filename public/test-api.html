@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="frame-ancestors 'self' https://*.walletconnect.org https://*.walletconnect.com https://secure.walletconnect.org https://secure.walletconnect.com https://*.pages.dev https://*.vercel.app https://*.ngrok-free.app; frame-src 'self' https://*.walletconnect.org https://*.walletconnect.com https://secure.walletconnect.org https://secure.walletconnect.com https://*.pages.dev https://*.vercel.app https://*.ngrok-free.app; connect-src 'self' http://localhost:* https://localhost:* https://app.bdcstack.com https://bdcstack.com https://*.bdcstack.com https://*.walletconnect.org https://*.walletconnect.com https://secure.walletconnect.org https://secure.walletconnect.com wss://*.walletconnect.org wss://*.walletconnect.com https://*.infura.io https://*.alchemy.com https://cca-lite.coinbase.com;" />
+    <title>API Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 API Connection Test</h1>
+        
+        <div class="test-section">
+            <h3>🌐 Production API Tests</h3>
+            <button onclick="testAPI('https://app.bdcstack.com/api/referrals/tree-direct/0xC65Ceba099dD9392bb324d700F7fF61EF2F38f1F?levels=21')">
+                Test Referral Tree API
+            </button>
+            <button onclick="testAPI('https://app.bdcstack.com/api/referrals/stats-direct/0xC65Ceba099dD9392bb324d700F7fF61EF2F38f1F')">
+                Test Referral Stats API
+            </button>
+            <button onclick="testAPI('https://app.bdcstack.com/health')">
+                Test Health Check
+            </button>
+            <div id="prod-result" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🏠 Local API Tests</h3>
+            <button onclick="testAPI('http://localhost:1735/api/referrals/tree-direct/0xC65Ceba099dD9392bb324d700F7fF61EF2F38f1F?levels=21')">
+                Test Local Referral Tree
+            </button>
+            <button onclick="testAPI('http://localhost:1735/api/referrals/stats-direct/0xC65Ceba099dD9392bb324d700F7fF61EF2F38f1F')">
+                Test Local Referral Stats
+            </button>
+            <button onclick="testAPI('http://localhost:1735/health')">
+                Test Local Health Check
+            </button>
+            <div id="local-result" class="result"></div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔍 CSP Test</h3>
+            <button onclick="testCSP()">Test Content Security Policy</button>
+            <div id="csp-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        async function testAPI(url) {
+            const resultDiv = url.includes('localhost') ? 
+                document.getElementById('local-result') : 
+                document.getElementById('prod-result');
+            
+            resultDiv.textContent = `🔄 Testing: ${url}`;
+            resultDiv.className = 'result loading';
+            
+            try {
+                console.log('Testing API:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    mode: 'cors'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.textContent = `✅ Success!\nURL: ${url}\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ API Error!\nURL: ${url}\nStatus: ${response.status}\nError: ${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result error';
+                }
+                
+            } catch (error) {
+                console.error('API Test Error:', error);
+                resultDiv.textContent = `❌ Network Error!\nURL: ${url}\nError: ${error.message}\nStack: ${error.stack}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        function testCSP() {
+            const resultDiv = document.getElementById('csp-result');
+            resultDiv.textContent = '🔄 Testing CSP configuration...';
+            resultDiv.className = 'result loading';
+            
+            // Get the CSP from meta tag
+            const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+            const csp = cspMeta ? cspMeta.getAttribute('content') : 'No CSP found';
+            
+            // Check if our domains are included
+            const hasAppBdcstack = csp.includes('https://app.bdcstack.com');
+            const hasBdcstack = csp.includes('https://bdcstack.com');
+            const hasWildcardBdcstack = csp.includes('https://*.bdcstack.com');
+            
+            let result = `📋 Current CSP Configuration:\n${csp}\n\n`;
+            result += `🔍 Domain Check:\n`;
+            result += `• https://app.bdcstack.com: ${hasAppBdcstack ? '✅' : '❌'}\n`;
+            result += `• https://bdcstack.com: ${hasBdcstack ? '✅' : '❌'}\n`;
+            result += `• https://*.bdcstack.com: ${hasWildcardBdcstack ? '✅' : '❌'}\n`;
+            
+            if (hasAppBdcstack && hasBdcstack && hasWildcardBdcstack) {
+                result += `\n✅ CSP is correctly configured for BDC Stack domains!`;
+                resultDiv.className = 'result success';
+            } else {
+                result += `\n❌ CSP is missing some BDC Stack domains!`;
+                resultDiv.className = 'result error';
+            }
+            
+            resultDiv.textContent = result;
+        }
+        
+        // Auto-run CSP test on page load
+        window.onload = function() {
+            testCSP();
+        };
+    </script>
+</body>
+</html>
