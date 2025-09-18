@@ -29,6 +29,7 @@ import { config } from '../config/web3modal';
 import { useWallet } from '../context/WalletContext';
 import { USDC_CONTRACT_ADDRESS } from '../services/approvalservice';
 import { MAINNET_CHAIN_ID, USDC_ABI, dwcContractInteractions } from '../services/contractService';
+import { apiService } from '../services/apiService';
 // import RankLogsDashboard from '../components/sections/RankLogsDashboard';
 // Icons
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
@@ -48,6 +49,7 @@ import {
   Banknote
 } from 'lucide-react';
 import ContractStatsSection from '../components/sections/ContractStatsSection';
+import DatabaseStatus from '../components/sections/DatabaseStatus';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 
 // Styled Grid component to enforce mobile-first layout
@@ -354,7 +356,8 @@ const MLMDashboard = () => {
   useEffect(() => {
     if (wallet.isConnected && wallet.account) {
       fetchMlmData();
-      fetchRewardsData()
+      fetchRewardsData();
+      fetchUserDataFromDB(); // Fetch user data from database
     }
   }, [wallet.isConnected, wallet.account, chainId]);
 
@@ -463,6 +466,25 @@ const MLMDashboard = () => {
         }
       }
 
+      // Store user registration in database
+      try {
+        console.log('💾 Storing user registration in database...');
+        const dbResponse = await apiService.registerUser({
+          walletAddress: wallet.account,
+          referrerAddress: refCode
+        });
+
+        if (dbResponse.success) {
+          console.log('✅ User registration stored in database');
+        } else {
+          console.warn('⚠️ Database registration failed:', dbResponse.error);
+          // Don't fail the whole process if DB storage fails
+        }
+      } catch (dbError) {
+        console.warn('⚠️ Database registration error:', dbError);
+        // Don't fail the whole process if DB storage fails
+      }
+
       setSuccess(`Registration successful! Transaction: ${registerTx}`);
       setReferralCode('');
       setShowReferralInput(false);
@@ -547,10 +569,32 @@ const MLMDashboard = () => {
           ? await dwcContractInteractions.depositDWC(amount, wallet.account)
           : await dwcContractInteractions.deposit(amount, wallet.account);
 
-      await waitForTransactionReceipt(config, {
+      const receipt = await waitForTransactionReceipt(config, {
         hash: txHash,
         chainId: MAINNET_CHAIN_ID,
       });
+
+      // Store investment in database
+      try {
+        console.log('💾 Storing investment in database...');
+        const dbResponse = await apiService.recordInvestment({
+          userAddress: wallet.account,
+          amount: Number(amount),
+          txHash: txHash,
+          blockNumber: Number(receipt.blockNumber),
+          type: depositType.toUpperCase() === 'BDC' ? 'BDC' : 'USDT'
+        });
+
+        if (dbResponse.success) {
+          console.log('✅ Investment stored in database');
+        } else {
+          console.warn('⚠️ Database investment storage failed:', dbResponse.error);
+          // Don't fail the whole process if DB storage fails
+        }
+      } catch (dbError) {
+        console.warn('⚠️ Database investment storage error:', dbError);
+        // Don't fail the whole process if DB storage fails
+      }
 
       setSuccess(`Successfully staked ${amount} ${depositType.toUpperCase()}! TX: ${txHash}`);
 
@@ -624,6 +668,45 @@ const MLMDashboard = () => {
 
   const formatDate = (timestamp = 0) => {
     return timestamp ? new Date(Number(timestamp) * 1000).toLocaleString() : 'N/A';
+  };
+
+  // Fetch user data from database
+  const fetchUserDataFromDB = async () => {
+    if (!wallet.isConnected || !wallet.account) {
+      return;
+    }
+
+    try {
+      console.log('📊 Fetching user data from database...');
+
+      // Test API connection first
+      const isConnected = await apiService.testConnection();
+      if (!isConnected) {
+        console.warn('⚠️ Backend API not available');
+        return;
+      }
+
+      // Fetch user data
+      const userResponse = await apiService.getUser(wallet.account);
+      if (userResponse.success) {
+        console.log('✅ User data fetched from database:', userResponse.data);
+      }
+
+      // Fetch user investments
+      const investmentsResponse = await apiService.getUserInvestments(wallet.account);
+      if (investmentsResponse.success) {
+        console.log('✅ User investments fetched from database:', investmentsResponse.data);
+      }
+
+      // Fetch user summary
+      const summaryResponse = await apiService.getUserSummary(wallet.account);
+      if (summaryResponse.success) {
+        console.log('✅ User summary fetched from database:', summaryResponse.data);
+      }
+
+    } catch (error) {
+      console.warn('⚠️ Error fetching user data from database:', error);
+    }
   };
 
   if (!wallet.isConnected) {
@@ -704,6 +787,9 @@ const MLMDashboard = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3 }, background: 'linear-gradient(135deg, #f0f4ff 0%, #d9e4ff 100%)', minHeight: '100vh' }}>
+      {/* Database Status Component */}
+      <DatabaseStatus compact />
+
       {registrationAlert}
 
       {error && (

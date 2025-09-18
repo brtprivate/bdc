@@ -13,6 +13,9 @@ import { WalletProvider } from './context/WalletContext';
 import { MLMProvider } from './context/MLMContext';
 import { ToastProvider } from './components/common/ToastNotification';
 
+// Utils
+import { logConfigurationStatus } from './utils/configValidator';
+
 // Components & Pages
 import Navbar from './components/Navbar';
 import MLMDashboard from './pages/MLMDashboard';
@@ -84,6 +87,11 @@ const theme = createTheme({
 const queryClient = new QueryClient();
 
 function App() {
+  // Validate configuration on app start (only in development)
+  if (import.meta.env.DEV) {
+    logConfigurationStatus();
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

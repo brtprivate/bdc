@@ -18,11 +18,17 @@ import {
   Chip,
   TableHead,
   styled,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Avatar
 } from '@mui/material';
 import { useWallet } from '../context/WalletContext';
 import { useChainId, useSwitchChain } from 'wagmi';
 import { formatUnits, decodeErrorResult } from 'viem';
 import { MAINNET_CHAIN_ID, dwcContractInteractions, USDC_ABI } from '../services/contractService';
+import { apiService } from '../services/apiService';
 import PeopleIcon from '@mui/icons-material/People';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
@@ -61,7 +67,16 @@ const MyTeam = () => {
     royaltyIncome: 0,
     totalTeam: 0,
     levels: [],
+    dbLevels: [], // Database levels (1-21)
+    referralTree: null,
+    referralStats: null,
   });
+
+  // Modal state for level details
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedLevel, setSelectedLevel] = useState(null);
+  const [levelUsers, setLevelUsers] = useState([]);
+  const [modalLoading, setModalLoading] = useState(false);
 
   // Inject CSS to ensure mobile-first layout for all cards
   useEffect(() => {
@@ -161,6 +176,66 @@ const MyTeam = () => {
     }
   };
 
+  // Function to fetch level details
+  const fetchLevelDetails = async (level) => {
+    if (!wallet.isConnected || !wallet.account) {
+      setError('Wallet not connected');
+      return;
+    }
+
+    setModalLoading(true);
+    try {
+      console.log(`🔍 Fetching details for level ${level}`);
+
+      // Use the new direct API endpoint
+      const response = await apiService.getUserReferralTree(wallet.account, 21);
+      console.log('📊 API Response:', response);
+
+      // Check both response.data (API wrapper) and direct response
+      const responseData = response.data || response;
+
+      if (responseData && responseData.tree && responseData.tree[`level${level}`]) {
+        const users = responseData.tree[`level${level}`];
+        console.log(`👥 Found ${users.length} users at level ${level}:`, users);
+
+        // Fetch investment details for each user
+        const usersWithInvestments = await Promise.all(
+          users.map(async (user) => {
+            try {
+              const investmentResponse = await apiService.getUserInvestments(user.userAddress);
+              const investments = investmentResponse?.data || investmentResponse || [];
+              return {
+                ...user,
+                investments: investments,
+                totalInvestmentAmount: investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
+              };
+            } catch (error) {
+              console.log(`No investments found for ${user.userAddress}`);
+              return {
+                ...user,
+                investments: [],
+                totalInvestmentAmount: 0
+              };
+            }
+          })
+        );
+
+        console.log('💰 Users with investment data:', usersWithInvestments);
+        setLevelUsers(usersWithInvestments);
+        setSelectedLevel(level);
+        setModalOpen(true);
+      } else {
+        console.log(`❌ No users found at level ${level}. Response structure:`, response);
+        setError(`No users found at level ${level}`);
+      }
+    } catch (error) {
+      console.error('Error fetching level details:', error);
+      setError('Failed to fetch level details: ' + error.message);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
   const fetchTeamData = async () => {
     if (!wallet.isConnected || !wallet.account) {
       setError('Wallet not connected. Please connect your wallet.');
@@ -183,8 +258,8 @@ const MyTeam = () => {
 
       const userInfo = await dwcContractInteractions.getUserInfo(wallet.account);
 
-        console.log('User Info:', userInfo);
-      
+      console.log('User Info:', userInfo);
+
       if (!userInfo?.id || userInfo.id === 0n) {
         setError('User not registered. Please register to view your team.');
         setNotRegistered(true);
@@ -245,6 +320,51 @@ const MyTeam = () => {
         console.log('Levels Data:', levels);
       }
 
+      // Fetch database team data
+      let referralTree = null;
+      let referralStats = null;
+      let dbLevels = [];
+
+      try {
+        console.log('🌳 Fetching database team data...');
+
+        // Fetch referral tree (21 levels)
+        const treeResponse = await apiService.getUserReferralTree(wallet.account, 21);
+        if (treeResponse.success) {
+          referralTree = treeResponse.data;
+          console.log('✅ Referral tree fetched:', referralTree);
+        }
+
+        // Fetch referral statistics
+        const statsResponse = await apiService.getUserReferralStats(wallet.account);
+        if (statsResponse.success) {
+          referralStats = statsResponse.data;
+          console.log('✅ Referral stats fetched:', referralStats);
+        }
+
+        // Process database levels (1-21)
+        if (referralTree && referralTree.tree) {
+          for (let level = 1; level <= 21; level++) {
+            const levelKey = `level${level}`;
+            const levelUsers = referralTree.tree[levelKey] || [];
+
+            dbLevels.push({
+              level,
+              userCount: levelUsers.length,
+              users: levelUsers,
+              totalInvestment: levelUsers.reduce((sum, user) => sum + (user.totalInvestment || 0), 0),
+              totalEarnings: levelUsers.reduce((sum, user) => sum + (user.totalEarnings || 0), 0),
+            });
+          }
+        }
+
+        console.log('✅ Database levels processed:', dbLevels);
+
+      } catch (error) {
+        console.error('❌ Error fetching database team data:', error);
+        // Continue with blockchain data even if database fails
+      }
+
       setTeamData({
         directReferrals: Number(userInfo.partnersCount) || 0,
         directBusiness: parseFloat(formatUnits(userInfo.directBusiness || 0n, 18)) || 0,
@@ -255,6 +375,9 @@ const MyTeam = () => {
         royaltyIncome: parseFloat(formatUnits(userInfo.royaltyincome || 0n, 18)) || 0,
         totalTeam: Number(userInfo.teamCount) || 0,
         levels,
+        dbLevels,
+        referralTree,
+        referralStats,
       });
     } catch (error) {
       console.error('Error fetching team data:', error);
@@ -301,6 +424,15 @@ const MyTeam = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleViewLevelDetails = async (level) => {
+    if (!wallet.isConnected || !wallet.account) {
+      setError('Please connect your wallet to view level details.');
+      return;
+    }
+
+    await fetchLevelDetails(level);
   };
 
   useEffect(() => {
@@ -482,12 +614,34 @@ const MyTeam = () => {
                   subtitle: 'Total members in your network',
                   color: 'success.main',
                 },
+                {
+                  icon: <EmojiEventsIcon />,
+                  title: 'Database Team',
+                  value: teamData.dbLevels ? teamData.dbLevels.reduce((sum, level) => sum + level.userCount, 0).toString() : '0',
+                  subtitle: 'Total team members in database',
+                  color: 'info.main',
+                },
+                {
+                  icon: <TrendingUpIcon />,
+                  title: 'Team Investment',
+                  value: formatCurrency(teamData.dbLevels ? teamData.dbLevels.reduce((sum, level) => sum + level.totalInvestment, 0) : 0),
+                  subtitle: 'Total investment by team',
+                  color: 'primary.main',
+                },
+                {
+                  icon: <AccountBalanceWalletIcon />,
+                  title: 'Team Earnings',
+                  value: formatCurrency(teamData.dbLevels ? teamData.dbLevels.reduce((sum, level) => sum + level.totalEarnings, 0) : 0),
+                  subtitle: 'Total earnings from team',
+                  color: 'secondary.main',
+                },
               ].map((card, index) => (
                 <Grid
                   item
                   xs={12}
                   sm={6}
                   md={4}
+                  lg={3}
                   key={`team-${index}`}
                   sx={{
                     '@media (max-width: 599px)': {
@@ -550,7 +704,7 @@ const MyTeam = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12}>
+        {/* <Grid item xs={12}>
           <Card sx={{ p: { xs: 2, sm: 3 }, boxShadow: 3 }} className="my-team-main-cards">
             <Typography
               variant="h5"
@@ -617,8 +771,316 @@ const MyTeam = () => {
               </Table>
             </TableContainer>
           </Card>
+        </Grid> */}
+
+        {/* 21 Levels Team Structure */}
+        <Grid item xs={12}>
+          <Card sx={{ p: { xs: 2, sm: 3 }, boxShadow: 3 }} className="my-team-main-cards">
+            <Typography
+              variant="h5"
+              gutterBottom
+              sx={{ color: 'primary.main', fontWeight: 'bold', mb: { xs: 2, sm: 3 }, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}
+            >
+              21 Levels Team Structure
+            </Typography>
+            <TableContainer component={Paper} sx={{ boxShadow: 2, overflowX: 'auto', maxHeight: 600 }}>
+              <Table sx={{ minWidth: { xs: 'auto', sm: 650 } }} aria-label="21 levels table" stickyHeader>
+                <TableHead>
+                  <TableRow sx={{ backgroundColor: 'primary.main' }}>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }}>Level</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Users</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Total Investment</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Total Earnings</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 'bold', fontSize: '1rem', backgroundColor: 'primary.main' }} align="center">Action</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {teamData.dbLevels && teamData.dbLevels.length > 0 ? (
+                    teamData.dbLevels.map((levelData) => (
+                      <TableRow
+                        key={levelData.level}
+                        sx={{
+                          '&:nth-of-type(odd)': { backgroundColor: 'action.hover' },
+                          cursor: 'pointer',
+                          '&:hover': { backgroundColor: 'primary.light', opacity: 0.1 }
+                        }}
+                      >
+                        <TableCell component="th" scope="row">
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                            Level {levelData.level}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={levelData.userCount}
+                            color={levelData.userCount > 0 ? 'success' : 'default'}
+                            variant="filled"
+                            sx={{ fontWeight: 'bold', minWidth: '60px' }}
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'secondary.main' }}>
+                            {formatCurrency(levelData.totalInvestment)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                            {formatCurrency(levelData.totalEarnings)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => handleViewLevelDetails(levelData.level)}
+                            disabled={levelData.userCount === 0}
+                            sx={{ fontSize: '0.75rem' }}
+                          >
+                            View Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    Array.from({ length: 21 }, (_, index) => (
+                      <TableRow key={index + 1}>
+                        <TableCell component="th" scope="row">
+                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+                            Level {index + 1}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label="0"
+                            color="default"
+                            variant="filled"
+                            sx={{ fontWeight: 'bold', minWidth: '60px' }}
+                          />
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                            {formatCurrency(0)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2" sx={{ fontWeight: 'bold', color: 'text.secondary' }}>
+                            {formatCurrency(0)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            disabled
+                            sx={{ fontSize: '0.75rem' }}
+                          >
+                            No Users
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Card>
         </Grid>
       </Grid>
+
+      {/* Level Details Modal */}
+      <Dialog
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box display="flex" alignItems="center" gap={1}>
+            <TrendingUpIcon color="primary" />
+            <Typography variant="h6">
+              Level {selectedLevel} Details
+            </Typography>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent>
+          {modalLoading ? (
+            <Box display="flex" justifyContent="center" p={3}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              <Box mb={2}>
+                <Typography variant="h6" color="primary" gutterBottom>
+                  Level {selectedLevel} Users ({levelUsers.length} Total)
+                </Typography>
+              </Box>
+
+              <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell sx={{ fontWeight: 'bold' }}>#</TableCell>
+                      <TableCell sx={{ fontWeight: 'bold' }}>User Address</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold' }}>Investment</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold' }}>Deposits</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold' }}>Join Date</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {levelUsers.map((user, index) => (
+                      <TableRow
+                        key={user.userAddress}
+                        sx={{
+                          '&:nth-of-type(odd)': { backgroundColor: '#fafafa' },
+                          '&:hover': { backgroundColor: '#f0f0f0' }
+                        }}
+                      >
+                        <TableCell>
+                          <Box display="flex" alignItems="center" gap={1}>
+                            <Avatar size="small" sx={{ width: 24, height: 24, fontSize: '0.8rem' }}>
+                              {index + 1}
+                            </Avatar>
+                          </Box>
+                        </TableCell>
+                        <TableCell>
+                          <Box>
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                fontFamily: 'monospace',
+                                fontSize: '0.75rem',
+                                wordBreak: 'break-all'
+                              }}
+                            >
+                              {user.userAddress}
+                            </Typography>
+                            {user.investments && user.investments.length > 0 && (
+                              <Typography variant="caption" color="text.secondary">
+                                {user.investments.length} transaction{user.investments.length > 1 ? 's' : ''}
+                              </Typography>
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
+                            <AccountBalanceWalletIcon fontSize="small" color="primary" />
+                            <Typography variant="body2" fontWeight="bold" color="primary">
+                              ${user.totalInvestmentAmount || 0}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
+                            <TrendingUpIcon fontSize="small" color="success" />
+                            <Typography variant="body2">
+                              {user.depositCount || 0}
+                            </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant="body2">
+                            {new Date(user.registrationTime).toLocaleDateString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Chip
+                            label={user.isActive ? 'Active' : 'Inactive'}
+                            color={user.isActive ? 'success' : 'default'}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+              {/* Investment History Section */}
+              {levelUsers.some(user => user.investments && user.investments.length > 0) && (
+                <Box mt={3}>
+                  <Typography variant="h6" gutterBottom>
+                    Investment History
+                  </Typography>
+                  <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                          <TableCell sx={{ fontWeight: 'bold' }}>User</TableCell>
+                          <TableCell align="center" sx={{ fontWeight: 'bold' }}>Amount</TableCell>
+                          <TableCell align="center" sx={{ fontWeight: 'bold' }}>Type</TableCell>
+                          <TableCell align="center" sx={{ fontWeight: 'bold' }}>Date</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {levelUsers.map((user, userIndex) =>
+                          user.investments && user.investments.length > 0 ?
+                            user.investments.map((investment, invIndex) => (
+                              <TableRow
+                                key={`${user.userAddress}-${invIndex}`}
+                                sx={{
+                                  '&:nth-of-type(odd)': { backgroundColor: '#fafafa' },
+                                  '&:hover': { backgroundColor: '#f0f0f0' }
+                                }}
+                              >
+                                <TableCell>
+                                  <Typography
+                                    variant="body2"
+                                    sx={{
+                                      fontFamily: 'monospace',
+                                      fontSize: '0.75rem',
+                                      wordBreak: 'break-all'
+                                    }}
+                                  >
+                                    {user.userAddress.slice(0, 10)}...{user.userAddress.slice(-8)}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="center">
+                                  <Typography variant="body2" fontWeight="bold" color="primary">
+                                    ${investment.amount}
+                                  </Typography>
+                                </TableCell>
+                                <TableCell align="center">
+                                  <Chip
+                                    label={investment.type || 'USDT'}
+                                    size="small"
+                                    variant="outlined"
+                                    color="primary"
+                                  />
+                                </TableCell>
+                                <TableCell align="center">
+                                  <Typography variant="body2">
+                                    {new Date(investment.investmentTime).toLocaleDateString()}
+                                  </Typography>
+                                </TableCell>
+                              </TableRow>
+                            )) : null
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
+              )}
+
+              {levelUsers.length === 0 && (
+                <Box textAlign="center" py={3}>
+                  <Typography color="text.secondary">
+                    No users found at this level
+                  </Typography>
+                </Box>
+              )}
+            </>
+          )}
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setModalOpen(false)}>
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };
