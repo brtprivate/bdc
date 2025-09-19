@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 1737;
 
-// Configure proper MIME types
+// Configure proper MIME types and mobile-friendly headers
 app.use((req, res, next) => {
   // Set proper MIME types for assets
   if (req.path.endsWith('.css')) {
@@ -26,10 +26,21 @@ app.use((req, res, next) => {
     res.setHeader('Content-Type', 'image/x-icon');
   }
 
-  // Security headers
+  // Mobile-friendly security headers (less restrictive for wallet connections)
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
+
+  // Allow wallet connections and mobile apps
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+
+  // Mobile-specific headers for better wallet compatibility
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
+  // Allow iframe embedding for wallet modals (important for mobile wallets)
+  res.setHeader('X-Frame-Options', 'ALLOWALL');
 
   next();
 });
@@ -53,10 +64,28 @@ app.use('/', express.static(join(__dirname, 'bdcstack'), {
   lastModified: true
 }));
 
+// Special handling for wallet connection requests
+app.use('/app', (req, res, next) => {
+  // Add mobile wallet-specific headers
+  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+
+  // Allow all origins for wallet connections
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  next();
+});
+
 // Handle React app routing - serve index.html for any /app/* routes that don't match static files
 app.get('/app/*', (req, res) => {
   res.setHeader('Content-Type', 'text/html');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+  // Mobile-specific headers for wallet compatibility
+  res.setHeader('X-Frame-Options', 'ALLOWALL');
+  res.setHeader('Content-Security-Policy', 'frame-ancestors *; frame-src *; connect-src *;');
+
   res.sendFile(join(__dirname, '../dist/index.html'));
 });
 

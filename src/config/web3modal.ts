@@ -64,9 +64,16 @@ createWeb3Modal({
   },
   // Default to BSC Mainnet for production
   defaultChain: bscChain,
-  // Mobile-specific configurations
+  // Mobile-specific configurations for Node.js server
   allowUnsupportedChain: false,
   enableWalletConnect: true,
   enableInjected: true,
-  enableCoinbase: true
+  enableCoinbase: true,
+  // Enhanced mobile compatibility when served through Node.js
+  enableNetworkView: true,
+  enableAccountView: true,
+  enableExplorer: true,
+  // Disable problematic features that don't work well with Node.js server
+  enableSwaps: false,
+  enableHistory: false
 });

@@ -4,6 +4,7 @@ import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { Address } from 'viem';
 import { dwcContractInteractions } from '../services/contractService';
 import { isMobile, debugMobileWallets, getMobileOS } from '../utils/mobileWalletDetector';
+import { detectServerEnvironment, applyNodeServerFixes, debugNodeServerWallet } from '../utils/nodeServerWalletFix';
 
 interface WalletContextType {
   account: string | null;
@@ -61,10 +62,22 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
       // Enhanced mobile detection and debugging
       const isMobileDevice = isMobile();
       const mobileOS = getMobileOS();
+      const serverEnv = detectServerEnvironment();
 
       if (isMobileDevice) {
         console.log(`Mobile device detected: ${mobileOS}`);
-        debugMobileWallets(); // Debug wallet detection
+
+        // Apply Node.js server fixes if needed
+        if (serverEnv.isNodeServer) {
+          console.log('🔧 Node.js server detected - applying mobile wallet fixes');
+          applyNodeServerFixes();
+          debugNodeServerWallet(); // Debug server-specific issues
+
+          // Wait for fixes to take effect
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } else {
+          debugMobileWallets(); // Debug wallet detection
+        }
 
         // Mobile-specific optimizations
         setTimeout(() => {

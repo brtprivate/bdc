@@ -5,15 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite --mode development",
-    "build": "vite build --mode production",
-    "build:dev": "vite build --mode development",
+    "build": "vite build --mode production && node scripts/post-build.js",
+    "build:dev": "vite build --mode development && node scripts/post-build.js",
+    "build:only": "vite build --mode production",
+    "postbuild": "node scripts/post-build.js",
     "preview": "vite preview",
     "lint": "eslint .",
     "backend": "cd backend && npm run dev",
     "backend:install": "cd backend && npm install",
     "backend:build": "cd backend && npm run build",
     "start:all": "concurrently \"npm run dev\" \"npm run backend\"",
-    "start:prod": "npm run build && npm run preview"
+    "start:prod": "npm run build && npm run preview",
+    "deploy": "npm run build && xcopy /E /I /Y dist server\\dist"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
