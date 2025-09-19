@@ -778,6 +778,23 @@ interface DWCContractInteractions {
   bonusInfos: (user: Address) => Promise<BonusInfo>;
 }
 
+// Mobile detection utility
+const isMobileDevice = (): boolean => {
+  return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+         (window.innerWidth <= 768 && 'ontouchstart' in window);
+};
+
+// Mobile-optimized gas limits for different functions
+const MOBILE_GAS_LIMITS = {
+  register: 300000n,
+  deposit: 400000n,
+  depositDWC: 400000n,
+  rewardWithdraw: 500000n,
+  tokenSwap: 600000n,
+  approve: 100000n,
+  transfer: 100000n,
+};
+
 // Contract interaction functions for DWC contract
 export const dwcContractInteractions: DWCContractInteractions = {
   async approveUSDC(amount: bigint, account: Address): Promise<`0x${string}`> {
@@ -930,53 +947,168 @@ export const dwcContractInteractions: DWCContractInteractions = {
 
   async register(referrer: Address, account: Address): Promise<`0x${string}`> {
     try {
-      console.log(`Registering user ${account} with referrer: ${referrer}`);
+      console.log(`🔗 Starting registration process...`);
+      console.log(`👤 User: ${account}`);
+      console.log(`👥 Referrer: ${referrer}`);
+      console.log(`📍 Contract: ${DWC_CONTRACT_ADDRESS}`);
+      console.log(`🌐 Chain: BSC Mainnet (${MAINNET_CHAIN_ID})`);
+
+      // Detect mobile environment
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                      (window.innerWidth <= 768 && 'ontouchstart' in window);
+
+      console.log(`📱 Mobile device: ${isMobile}`);
+
+      // Basic validation
       if (referrer === "0x0000000000000000000000000000000000000000") {
-        throw new Error(
-          "Invalid referrer address: zero address is not allowed"
-        );
+        throw new Error("Invalid referrer address: zero address is not allowed");
       }
+
       const ethAddressRegex = /^0x[a-fA-F0-9]{40}$/;
       if (!ethAddressRegex.test(referrer)) {
         throw new Error("Invalid referrer address format");
       }
+
+      // Check if user already exists
+      console.log(`🔍 Checking if user already exists...`);
       const isUserExists = await this.isUserExists(account);
       if (isUserExists) {
         throw new Error("User already registered");
       }
+      console.log(`✅ User not registered yet, proceeding...`);
 
-      // Skip referrer validation - let contract handle it
-      console.log(`Proceeding with registration using referrer: ${referrer}`);
+      // Mobile-specific approach: Skip complex validations that fail on mobile
+      if (isMobile) {
+        console.log(`📱 Using mobile-optimized registration flow...`);
 
-      const gasEstimate = await estimateGas(config, {
-        abi: DWC_ABI,
-        address: DWC_CONTRACT_ADDRESS,
-        functionName: "register",
-        args: [referrer],
-        chain: bsc,
-        account,
-      });
-      // Increase gas limit by 200% to handle reentrancy sentry and set minimum
-      const gasLimit = (gasEstimate * 200n) / 100n;
-      const minGasLimit = 150000n;
-      const finalGasLimit = gasLimit > minGasLimit ? gasLimit : minGasLimit;
-      const txHash = await writeContract(config, {
-        abi: DWC_ABI,
-        address: DWC_CONTRACT_ADDRESS,
-        functionName: "register",
-        args: [referrer],
-        chain: bsc,
-        account,
-        // gas: finalGasLimit,
-      });
-      await waitForTransactionReceipt(config, {
-        hash: txHash as `0x${string}`,
-        chainId: MAINNET_CHAIN_ID,
-      });
-      return txHash as `0x${string}`;
+        // Skip contract simulation on mobile (often fails)
+        console.log(`📱 Skipping contract simulation on mobile...`);
+
+        // Use fixed gas limit for mobile (gas estimation often fails)
+        const mobileGasLimit = 300000n; // Fixed gas limit for mobile
+        console.log(`📱 Using fixed gas limit for mobile: ${mobileGasLimit.toString()}`);
+
+        // Execute transaction with mobile-optimized settings
+        console.log(`🚀 Executing mobile registration transaction...`);
+        const txHash = await writeContract(config, {
+          abi: DWC_ABI,
+          address: DWC_CONTRACT_ADDRESS,
+          functionName: "register",
+          args: [referrer],
+          chain: bsc,
+          account,
+          gas: mobileGasLimit, // Fixed gas for mobile
+        });
+
+        console.log(`📝 Transaction hash: ${txHash}`);
+        console.log(`⏳ Waiting for transaction confirmation...`);
+
+        await waitForTransactionReceipt(config, {
+          hash: txHash as `0x${string}`,
+          chainId: MAINNET_CHAIN_ID,
+        });
+
+        console.log(`✅ Mobile registration successful!`);
+        return txHash as `0x${string}`;
+
+      } else {
+        // Desktop flow with full validation
+        console.log(`💻 Using desktop registration flow...`);
+
+        // Check if referrer exists (desktop only)
+        console.log(`🔍 Checking if referrer exists...`);
+        const isReferrerExists = await this.isUserExists(referrer);
+        if (!isReferrerExists) {
+          console.warn(`⚠️ Referrer ${referrer} does not exist in contract`);
+        } else {
+          console.log(`✅ Referrer exists, proceeding...`);
+        }
+
+        // Try to simulate the contract call (desktop only)
+        console.log(`🧪 Simulating contract call...`);
+        try {
+          const { request } = await simulateContract(config, {
+            abi: DWC_ABI,
+            address: DWC_CONTRACT_ADDRESS,
+            functionName: "register",
+            args: [referrer],
+            account,
+          });
+          console.log(`✅ Contract simulation successful`);
+        } catch (simError: any) {
+          console.error(`❌ Contract simulation failed:`, simError);
+          if (simError.message?.includes('revert')) {
+            throw new Error(`Contract rejected the transaction: ${simError.message}`);
+          } else if (simError.message?.includes('insufficient funds')) {
+            throw new Error('Insufficient funds for gas fees');
+          } else {
+            throw new Error(`Registration failed: ${simError.message || 'Unknown contract error'}`);
+          }
+        }
+
+        // Estimate gas (desktop only)
+        console.log(`⛽ Estimating gas...`);
+        let gasEstimate: bigint;
+        try {
+          gasEstimate = await estimateGas(config, {
+            abi: DWC_ABI,
+            address: DWC_CONTRACT_ADDRESS,
+            functionName: "register",
+            args: [referrer],
+            chain: bsc,
+            account,
+          });
+          console.log(`✅ Gas estimate: ${gasEstimate.toString()}`);
+        } catch (gasError: any) {
+          console.error(`❌ Gas estimation failed:`, gasError);
+          throw new Error(`Gas estimation failed: ${gasError.message}`);
+        }
+
+        // Execute the transaction (desktop)
+        console.log(`🚀 Executing desktop registration transaction...`);
+        const txHash = await writeContract(config, {
+          abi: DWC_ABI,
+          address: DWC_CONTRACT_ADDRESS,
+          functionName: "register",
+          args: [referrer],
+          chain: bsc,
+          account,
+          gas: gasEstimate + (gasEstimate / 10n), // Add 10% buffer
+        });
+
+        console.log(`📝 Transaction hash: ${txHash}`);
+        console.log(`⏳ Waiting for transaction confirmation...`);
+
+        await waitForTransactionReceipt(config, {
+          hash: txHash as `0x${string}`,
+          chainId: MAINNET_CHAIN_ID,
+        });
+
+        console.log(`✅ Desktop registration successful!`);
+        return txHash as `0x${string}`;
+      }
+
     } catch (error: any) {
-      console.error(`Error registering user: ${error.message || error}`);
-      throw error;
+      console.error(`❌ Registration failed:`, error);
+      console.error(`Error details:`, {
+        message: error.message,
+        cause: error.cause,
+        data: error.data,
+        code: error.code
+      });
+
+      // Provide user-friendly error messages
+      if (error.message?.includes('User denied')) {
+        throw new Error('Transaction was rejected by user');
+      } else if (error.message?.includes('insufficient funds')) {
+        throw new Error('Insufficient BNB for gas fees');
+      } else if (error.message?.includes('already registered')) {
+        throw new Error('User is already registered');
+      } else if (error.message?.includes('referrer')) {
+        throw new Error('Invalid referrer address or referrer not found');
+      } else {
+        throw new Error(`Registration failed: ${error.message || 'Unknown error'}`);
+      }
     }
   },
 
@@ -1044,17 +1176,34 @@ export const dwcContractInteractions: DWCContractInteractions = {
         });
       }
 
-      // ✅ Execute transaction
+      // ✅ Execute transaction with mobile optimization
       console.log("Executing deposit transaction...");
-      const txHash = await writeContract(config, {
-        abi: DWC_ABI,
-        address: DWC_CONTRACT_ADDRESS,
-        functionName: "deposit",
-        args: [amountInWei],
-        chain: bsc,
-        account: userAddress,
-        // gas: BkigInt(500000), // Optional manual gas limit
-      });
+      const isMobile = isMobileDevice();
+
+      let txHash: `0x${string}`;
+      if (isMobile) {
+        console.log("📱 Using mobile-optimized deposit...");
+        txHash = await writeContract(config, {
+          abi: DWC_ABI,
+          address: DWC_CONTRACT_ADDRESS,
+          functionName: "deposit",
+          args: [amountInWei],
+          chain: bsc,
+          account: userAddress,
+          gas: MOBILE_GAS_LIMITS.deposit, // Fixed gas for mobile
+        });
+      } else {
+        console.log("💻 Using desktop deposit...");
+        txHash = await writeContract(config, {
+          abi: DWC_ABI,
+          address: DWC_CONTRACT_ADDRESS,
+          functionName: "deposit",
+          args: [amountInWei],
+          chain: bsc,
+          account: userAddress,
+          // Let wallet estimate gas on desktop
+        });
+      }
 
       console.log(`Deposit transaction successful: ${txHash}`);
       return txHash as `0x${string}`;
