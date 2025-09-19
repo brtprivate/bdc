@@ -2,12 +2,13 @@ import {
   estimateGas,
   getWalletClient,
   readContract,
+  simulateContract,
   waitForTransactionReceipt,
   writeContract,
 } from "@wagmi/core";
 import { ethers } from "ethers";
 
-import type { Address, Address } from "viem";
+import type { Address } from "viem";
 import {
   decodeErrorResult,
   formatEther,
@@ -1272,46 +1273,198 @@ export const dwcContractInteractions: DWCContractInteractions = {
   ): Promise<`0x${string}`> {
     try {
       console.log(`Withdrawing reward for index ${rewardIndex} for ${account}`);
+
+      // Validate inputs
+      if (rewardIndex < 0n) {
+        throw new Error("Invalid reward index");
+      }
+
+      // Check contract conditions
       const isWithdrawActive = await this.isWithdrawActive();
       if (!isWithdrawActive) {
         throw new Error("Withdrawals are disabled");
       }
+
       const userCapping = await this.getUserCapping(account);
       if (!userCapping.Iswithdraw) {
         throw new Error("User withdrawals are not active");
       }
+
       const isUserExists = await this.isUserExists(account);
       if (!isUserExists) {
         throw new Error("User is not registered");
       }
+
       const order = await this.getOrderInfo(account, rewardIndex);
+      console.log(`Order details for index ${rewardIndex}:`, order);
+
       if (!order.isactive) {
-        throw new Error("Order is not active");
+        throw new Error(`Order at index ${rewardIndex} is not active. Order status: ${JSON.stringify(order)}`);
       }
-      const gasEstimate = await estimateGas(config, {
-        abi: DWC_ABI,
-        address: DWC_CONTRACT_ADDRESS,
-        functionName: "rewardWithdraw",
-        args: [rewardIndex],
-        chain: bsc,
-        account,
-      });
-      const txHash = await writeContract(config, {
-        abi: DWC_ABI,
-        address: DWC_CONTRACT_ADDRESS,
-        functionName: "rewardWithdraw",
-        args: [rewardIndex],
-        chain: bsc,
-        account,
-        // gas: gasEstimate,
-      });
-      await waitForTransactionReceipt(config, {
-        hash: txHash as `0x${string}`,
+
+      // Additional validation - check if order has any amount
+      if (!order.amount || order.amount === 0n) {
+        throw new Error(`Order at index ${rewardIndex} has no amount. Order details: ${JSON.stringify(order)}`);
+      }
+
+      // Check if enough time has passed for withdrawal (if there's a time requirement)
+      const currentTime = Math.floor(Date.now() / 1000);
+      if (order.deposit_time && Number(order.deposit_time) > currentTime) {
+        throw new Error(`Order deposit time is in the future. Current: ${currentTime}, Deposit: ${order.deposit_time}`);
+      }
+
+      // Try to simulate the contract call first
+      try {
+        const { request } = await simulateContract(config, {
+          abi: DWC_ABI,
+          address: DWC_CONTRACT_ADDRESS,
+          functionName: "rewardWithdraw",
+          args: [rewardIndex],
+          account,
+        });
+        console.log("Contract simulation successful", request);
+      } catch (simError: any) {
+        console.error("Contract simulation failed:", simError);
+        console.error("Simulation error details:", {
+          message: simError.message,
+          cause: simError.cause,
+          data: simError.cause?.data
+        });
+
+        // Try to decode the simulation error
+        if (simError.cause?.data) {
+          try {
+            const decodedSimError = decodeErrorResult({
+              abi: DWC_ABI,
+              data: simError.cause.data,
+            });
+            console.error("Decoded simulation error:", decodedSimError);
+            throw new Error(`Contract simulation failed: ${decodedSimError.errorName} - ${decodedSimError.args?.join(', ') || 'No additional info'}`);
+          } catch (decodeError) {
+            console.error("Failed to decode simulation error:", decodeError);
+          }
+        }
+
+        throw new Error(`Contract simulation failed: ${simError.message || simError}`);
+      }
+
+      // Estimate gas
+      let gasEstimate: bigint;
+      try {
+        gasEstimate = await estimateGas(config, {
+          abi: DWC_ABI,
+          address: DWC_CONTRACT_ADDRESS,
+          functionName: "rewardWithdraw",
+          args: [rewardIndex],
+          chain: bsc,
+          account,
+        });
+        console.log(`Gas estimate: ${gasEstimate}`);
+      } catch (gasError: any) {
+        console.error("Gas estimation failed:", gasError);
+        // Use a default gas limit if estimation fails
+        gasEstimate = 300000n;
+        console.log(`Using default gas estimate: ${gasEstimate}`);
+      }
+
+      // Execute transaction with retry mechanism
+      let txHash: `0x${string}` | undefined;
+      let lastError: any;
+
+      // Try 1: Let wallet estimate gas
+      try {
+        console.log("Attempt 1: Using wallet gas estimation");
+        txHash = await writeContract(config, {
+          abi: DWC_ABI,
+          address: DWC_CONTRACT_ADDRESS,
+          functionName: "rewardWithdraw",
+          args: [rewardIndex],
+          chain: bsc,
+          account,
+        });
+      } catch (error1: any) {
+        console.log("Attempt 1 failed:", error1.message);
+        lastError = error1;
+
+        // Try 2: Use manual gas estimation
+        try {
+          console.log("Attempt 2: Using manual gas estimation");
+          txHash = await writeContract(config, {
+            abi: DWC_ABI,
+            address: DWC_CONTRACT_ADDRESS,
+            functionName: "rewardWithdraw",
+            args: [rewardIndex],
+            chain: bsc,
+            account,
+            gas: gasEstimate + (gasEstimate / 10n), // Add 10% buffer
+          });
+        } catch (error2: any) {
+          console.log("Attempt 2 failed:", error2.message);
+          lastError = error2;
+
+          // Try 3: Use higher gas limit
+          try {
+            console.log("Attempt 3: Using higher gas limit");
+            txHash = await writeContract(config, {
+              abi: DWC_ABI,
+              address: DWC_CONTRACT_ADDRESS,
+              functionName: "rewardWithdraw",
+              args: [rewardIndex],
+              chain: bsc,
+              account,
+              gas: gasEstimate * 2n, // Double the gas
+            });
+          } catch (error3: any) {
+            console.log("All attempts failed");
+            lastError = error3;
+          }
+        }
+      }
+
+      if (!txHash) {
+        console.error("All transaction attempts failed. Last error:", lastError);
+        throw new Error(`Transaction failed after multiple attempts: ${lastError?.message || lastError}`);
+      }
+
+      console.log(`Transaction submitted: ${txHash}`);
+
+      // Wait for confirmation
+      const receipt = await waitForTransactionReceipt(config, {
+        hash: txHash,
         chainId: MAINNET_CHAIN_ID,
       });
-      return txHash as `0x${string}`;
+
+      console.log(`Transaction confirmed: ${receipt.transactionHash}`);
+      return txHash;
     } catch (error: any) {
       console.error(`Error withdrawing reward: ${error.message || error}`);
+      console.error("Full error object:", error);
+
+      // Try to decode the error if it's a contract revert
+      if (error.cause?.data) {
+        try {
+          const decodedError = decodeErrorResult({
+            abi: DWC_ABI,
+            data: error.cause.data,
+          });
+          console.error("Decoded contract error:", decodedError);
+          throw new Error(`Contract error: ${decodedError.errorName} - ${decodedError.args?.join(', ') || 'No additional info'}`);
+        } catch (decodeError) {
+          console.error("Failed to decode error:", decodeError);
+        }
+      }
+
+      // Enhanced error handling
+      if (error.message?.includes("User denied transaction") || error.message?.includes("user rejected")) {
+        throw new Error("Transaction was rejected by user");
+      } else if (error.message?.includes("insufficient funds")) {
+        throw new Error("Insufficient BNB balance for gas fees");
+      } else if (error.message?.includes("execution reverted")) {
+        throw new Error("Transaction reverted - check contract conditions");
+      } else if (error.message?.includes("Transaction does not have a transaction hash")) {
+        throw new Error("Transaction failed to execute - this may be due to contract conditions not being met or network issues");
+      }
+
       throw error;
     }
   },

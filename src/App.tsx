@@ -106,7 +106,7 @@ function App() {
                   <Routes>
                     <Route path="/" element={<MLMDashboard />} />
                     <Route path="/my-holding" element={<MyHolding />} />
-                    <Route path="/my-team" element={<MyTeam />} />
+                    {/* <Route path="/my-team" element={<MyTeam />} /> */}
                     <Route path="/swap" element={<SwapPage />} />
                     <Route path="/rewards" element={<RewardsPage />} />
                     <Route path="/usd/mlm/register" element={<MLMRegister />} />

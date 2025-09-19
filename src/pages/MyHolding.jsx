@@ -16,6 +16,11 @@ import {
   Paper,
   Button,
   TableHead,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from '@mui/material';
 import { useWallet } from '../context/WalletContext';
 import { useChainId, useSwitchChain, useBalance } from 'wagmi';
@@ -47,6 +52,11 @@ const MyHolding = () => {
     coinRate: 0,
   });
   const [orders, setOrders] = useState([]);
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    index: null,
+    amount: 0,
+  });
 
   const fetchHoldingData = async () => {
     if (!wallet.isConnected || !wallet.account) {
@@ -99,6 +109,16 @@ const MyHolding = () => {
         if (process.env.NODE_ENV === 'development') {
           console.log(`Order ${i}:`, order);
         }
+
+        // Enhanced logging for debugging
+        console.log(`Order ${i} details:`, {
+          amount: order.amount?.toString(),
+          isactive: order.isactive,
+          deposit_time: order.deposit_time?.toString(),
+          reward_time: order.reward_time?.toString(),
+          isdai: order.isdai
+        });
+
         if (order.isactive) {
           totalActiveUsdc += parseFloat(formatUnits(order.amount, 18));
         }
@@ -139,19 +159,62 @@ const MyHolding = () => {
     }
   };
 
+  const handleWithdrawClick = (index) => {
+    const order = orders[index];
+    const amount = parseFloat(formatUnits(order.amount, 18)) || 0;
+    setConfirmDialog({
+      open: true,
+      index,
+      amount,
+    });
+  };
+
+  const debugContractConditions = async (index) => {
+    try {
+      console.log('=== DEBUG: Contract Conditions ===');
+
+      // Check withdrawal status
+      const isWithdrawActive = await dwcContractInteractions.isWithdrawActive();
+      console.log('Is withdraw active:', isWithdrawActive);
+
+      // Check user capping
+      const userCapping = await dwcContractInteractions.getUserCapping(wallet.account);
+      console.log('User capping:', userCapping);
+
+      // Check user registration
+      const isUserExists = await dwcContractInteractions.isUserExists(wallet.account);
+      console.log('Is user registered:', isUserExists);
+
+      // Check specific order
+      const order = await dwcContractInteractions.getOrderInfo(wallet.account, BigInt(index));
+      console.log('Order info:', order);
+
+      console.log('=== END DEBUG ===');
+    } catch (debugError) {
+      console.error('Debug error:', debugError);
+    }
+  };
+
   const handleWithdraw = async (index) => {
     if (!wallet.isConnected || !wallet.account) {
       setError('Please connect your wallet to withdraw.');
       return;
     }
 
-    if (chainId !== MAINNET_CHAIN_ID) {
+    // Check and switch network if needed
+    if (chainId && chainId !== MAINNET_CHAIN_ID) {
       try {
         await switchChain({ chainId: MAINNET_CHAIN_ID });
+        // Wait a moment for the chain switch to complete
+        await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
-        setError('Please switch to BSC Mainnet.');
+        console.error('Chain switch error:', error);
+        setError('Please switch to BSC Mainnet to continue.');
         return;
       }
+    } else if (!chainId) {
+      // If chainId is not detected, show a warning but continue
+      console.warn('Chain ID not detected, proceeding with transaction...');
     }
 
     try {
@@ -159,12 +222,77 @@ const MyHolding = () => {
       setError('');
       setSuccess('');
 
-      const txHash = await dwcContractInteractions.rewardWithdraw(index, wallet.account);
+      // Debug contract conditions first
+      await debugContractConditions(index);
+
+      // Test contract accessibility
+      try {
+        const contractOwner = await dwcContractInteractions.getOwner();
+        console.log('Contract owner (accessibility test):', contractOwner);
+
+        // Also test if we can read the contract's basic info
+        const coinRate = await dwcContractInteractions.getCoinRate();
+        console.log('Contract coin rate (accessibility test):', coinRate);
+      } catch (accessError) {
+        console.error('Contract accessibility test failed:', accessError);
+        throw new Error('Cannot access contract. Please check your network connection.');
+      }
+
+      // Check BNB balance for gas fees
+      const minBnbRequired = 0.001; // Minimum BNB required for gas
+      const currentBnbBalance = bnbBalance ? parseFloat(formatUnits(bnbBalance.value, 18)) : 0;
+
+      if (currentBnbBalance < minBnbRequired) {
+        throw new Error(`Insufficient BNB balance. You need at least ${minBnbRequired} BNB for gas fees. Current balance: ${currentBnbBalance.toFixed(4)} BNB`);
+      }
+
+      // Convert index to BigInt as required by the contract
+      const rewardIndex = BigInt(index);
+
+      console.log(`Attempting withdrawal for index: ${rewardIndex}`);
+      console.log(`Order details:`, orders[index]);
+
+      // Additional validation before calling contract
+      const order = orders[index];
+      if (!order || !order.isactive) {
+        throw new Error(`Order at index ${index} is not active or does not exist`);
+      }
+
+      const txHash = await dwcContractInteractions.rewardWithdraw(rewardIndex, wallet.account);
+
+      if (!txHash) {
+        throw new Error("Transaction failed - no transaction hash returned");
+      }
+
       setSuccess(`Successfully withdrawn reward! Transaction: ${txHash}`);
+      setConfirmDialog({ open: false, index: null, amount: 0 });
+
+      // Refresh data after successful withdrawal
       setTimeout(fetchHoldingData, 3000);
     } catch (error) {
-      console.error('Error withdrawing:', error);
-      setError(`Failed to withdraw: ${error.message || 'Unknown error'}`);
+      console.error('Error withdrawing reward:', error);
+      let errorMessage = 'Failed to withdraw reward. Please try again.';
+
+      // Handle specific error cases
+      if (error.message) {
+        if (error.message.includes('Withdrawals are disabled')) {
+          errorMessage = 'Withdrawals are currently disabled by the contract.';
+        } else if (error.message.includes('User withdrawals are not active')) {
+          errorMessage = 'Your account withdrawals are not active. Please contact support.';
+        } else if (error.message.includes('User is not registered')) {
+          errorMessage = 'You need to register first before withdrawing.';
+        } else if (error.message.includes('Order is not active')) {
+          errorMessage = 'This investment order is not active for withdrawal.';
+        } else if (error.message.includes('insufficient funds')) {
+          errorMessage = 'Insufficient BNB balance for gas fees.';
+        } else if (error.message.includes('user rejected')) {
+          errorMessage = 'Transaction was rejected by user.';
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -368,7 +496,7 @@ const MyHolding = () => {
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Amount</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Status</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Date</TableCell>
-                {/* <TableCell align="center" sx={{ fontWeight: 'bold' }}>Action</TableCell> */}
+                <TableCell align="center" sx={{ fontWeight: 'bold' }}>Action</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -387,24 +515,74 @@ const MyHolding = () => {
                     {row.status}
                   </TableCell>
                   <TableCell align="center">{row.date}</TableCell>
-                  {/* <TableCell align="center">
+                  <TableCell align="center">
                     {row.status === 'Active' && (
                       <Button
                         variant="contained"
                         size="small"
-                        onClick={() => handleWithdraw(index)}
+                        onClick={() => handleWithdrawClick(index)}
                         disabled={isLoading}
+                        sx={{
+                          bgcolor: 'success.main',
+                          '&:hover': { bgcolor: 'success.dark' },
+                          '&:disabled': { bgcolor: 'grey.400' }
+                        }}
                       >
-                        Withdraw
+                        {isLoading ? 'Processing...' : 'Withdraw'}
                       </Button>
                     )}
-                  </TableCell> */}
+                    {row.status === 'Completed' && (
+                      <Typography variant="body2" color="text.secondary">
+                        Completed
+                      </Typography>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </TableContainer>
       </Box>
+
+      {/* Withdrawal Confirmation Dialog */}
+      <Dialog
+        open={confirmDialog.open}
+        onClose={() => setConfirmDialog({ open: false, index: null, amount: 0 })}
+        aria-labelledby="withdraw-dialog-title"
+        aria-describedby="withdraw-dialog-description"
+      >
+        <DialogTitle id="withdraw-dialog-title">
+          Confirm Withdrawal
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="withdraw-dialog-description">
+            Are you sure you want to withdraw your reward of{' '}
+            <strong>{formatCurrency(confirmDialog.amount)}</strong>?
+            <br />
+            <br />
+            This action cannot be undone and will require gas fees.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setConfirmDialog({ open: false, index: null, amount: 0 })}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              setConfirmDialog({ open: false, index: null, amount: 0 });
+              handleWithdraw(confirmDialog.index);
+            }}
+            variant="contained"
+            color="success"
+            disabled={isLoading}
+          >
+            Confirm Withdrawal
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

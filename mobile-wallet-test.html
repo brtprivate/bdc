@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>BDC Stack - Mobile Wallet Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        
+        .info-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .status {
+            font-weight: bold;
+        }
+        
+        .status.good {
+            color: #4CAF50;
+        }
+        
+        .status.bad {
+            color: #f44336;
+        }
+        
+        .wallet-section {
+            margin-top: 20px;
+        }
+        
+        .wallet-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .wallet-name {
+            font-weight: bold;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(45deg, #FFA000, #FF8F00);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        .wallet-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .trust-btn { background: #3375BB; }
+        .metamask-btn { background: #F6851B; }
+        .coinbase-btn { background: #0052FF; }
+        
+        .debug-log {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔗 Mobile Wallet Test</h1>
+        
+        <button class="refresh-btn" onclick="refreshInfo()">🔄 Refresh Info</button>
+        
+        <div class="info-section">
+            <h3>Device Info</h3>
+            <div class="info-item">
+                <span>Device Type:</span>
+                <span class="status" id="deviceType">-</span>
+            </div>
+            <div class="info-item">
+                <span>Mobile OS:</span>
+                <span class="status" id="mobileOS">-</span>
+            </div>
+            <div class="info-item">
+                <span>Screen Size:</span>
+                <span class="status" id="screenSize">-</span>
+            </div>
+            <div class="info-item">
+                <span>Touch Support:</span>
+                <span class="status" id="touchSupport">-</span>
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <h3>Web3 Support</h3>
+            <div class="info-item">
+                <span>window.ethereum:</span>
+                <span class="status" id="ethereumSupport">-</span>
+            </div>
+            <div class="info-item">
+                <span>MetaMask:</span>
+                <span class="status" id="metamaskDetected">-</span>
+            </div>
+            <div class="info-item">
+                <span>Trust Wallet:</span>
+                <span class="status" id="trustDetected">-</span>
+            </div>
+            <div class="info-item">
+                <span>Coinbase Wallet:</span>
+                <span class="status" id="coinbaseDetected">-</span>
+            </div>
+        </div>
+        
+        <div class="wallet-section">
+            <h3>Quick Wallet Links</h3>
+            <div class="wallet-item">
+                <span class="wallet-name">Trust Wallet</span>
+                <button class="wallet-btn trust-btn" onclick="openTrustWallet()">Open</button>
+            </div>
+            <div class="wallet-item">
+                <span class="wallet-name">MetaMask</span>
+                <button class="wallet-btn metamask-btn" onclick="openMetaMask()">Open</button>
+            </div>
+            <div class="wallet-item">
+                <span class="wallet-name">Coinbase Wallet</span>
+                <button class="wallet-btn coinbase-btn" onclick="openCoinbaseWallet()">Open</button>
+            </div>
+        </div>
+        
+        <button class="btn" onclick="testWalletConnection()">🚀 Test Wallet Connection</button>
+        
+        <div class="debug-log" id="debugLog">Debug information will appear here...</div>
+    </div>
+
+    <script>
+        function log(message) {
+            const debugLog = document.getElementById('debugLog');
+            const timestamp = new Date().toLocaleTimeString();
+            debugLog.textContent += `[${timestamp}] ${message}\n`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+            console.log(message);
+        }
+        
+        function isMobile() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isMobileUA = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const isSmallScreen = window.innerWidth <= 768;
+            return isMobileUA || (isTouchDevice && isSmallScreen);
+        }
+        
+        function getMobileOS() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            if (/iphone|ipad|ipod/.test(userAgent)) return 'iOS';
+            if (/android/.test(userAgent)) return 'Android';
+            return 'Other';
+        }
+        
+        function refreshInfo() {
+            // Device Info
+            document.getElementById('deviceType').textContent = isMobile() ? 'Mobile' : 'Desktop';
+            document.getElementById('deviceType').className = 'status ' + (isMobile() ? 'good' : 'bad');
+            
+            document.getElementById('mobileOS').textContent = getMobileOS();
+            document.getElementById('screenSize').textContent = `${window.innerWidth}x${window.innerHeight}`;
+            document.getElementById('touchSupport').textContent = 'ontouchstart' in window ? 'Yes' : 'No';
+            document.getElementById('touchSupport').className = 'status ' + ('ontouchstart' in window ? 'good' : 'bad');
+            
+            // Web3 Support
+            const hasEthereum = typeof window.ethereum !== 'undefined';
+            document.getElementById('ethereumSupport').textContent = hasEthereum ? 'Available' : 'Not Available';
+            document.getElementById('ethereumSupport').className = 'status ' + (hasEthereum ? 'good' : 'bad');
+            
+            const isMetaMask = window.ethereum?.isMetaMask;
+            document.getElementById('metamaskDetected').textContent = isMetaMask ? 'Detected' : 'Not Detected';
+            document.getElementById('metamaskDetected').className = 'status ' + (isMetaMask ? 'good' : 'bad');
+            
+            const isTrust = window.ethereum?.isTrust || window.trustwallet;
+            document.getElementById('trustDetected').textContent = isTrust ? 'Detected' : 'Not Detected';
+            document.getElementById('trustDetected').className = 'status ' + (isTrust ? 'good' : 'bad');
+            
+            const isCoinbase = window.ethereum?.isCoinbaseWallet;
+            document.getElementById('coinbaseDetected').textContent = isCoinbase ? 'Detected' : 'Not Detected';
+            document.getElementById('coinbaseDetected').className = 'status ' + (isCoinbase ? 'good' : 'bad');
+            
+            log('Device info refreshed');
+        }
+        
+        function openTrustWallet() {
+            const mobileOS = getMobileOS();
+            if (mobileOS === 'iOS') {
+                window.location.href = 'trust://';
+                setTimeout(() => {
+                    window.open('https://apps.apple.com/app/trust-crypto-bitcoin-wallet/id1288339409', '_blank');
+                }, 2000);
+            } else if (mobileOS === 'Android') {
+                window.location.href = 'trust://';
+                setTimeout(() => {
+                    window.open('https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp', '_blank');
+                }, 2000);
+            } else {
+                window.open('https://trustwallet.com/download', '_blank');
+            }
+            log('Attempting to open Trust Wallet');
+        }
+        
+        function openMetaMask() {
+            const mobileOS = getMobileOS();
+            if (mobileOS === 'iOS') {
+                window.location.href = 'metamask://';
+                setTimeout(() => {
+                    window.open('https://apps.apple.com/app/metamask/id1438144202', '_blank');
+                }, 2000);
+            } else if (mobileOS === 'Android') {
+                window.location.href = 'metamask://';
+                setTimeout(() => {
+                    window.open('https://play.google.com/store/apps/details?id=io.metamask', '_blank');
+                }, 2000);
+            } else {
+                window.open('https://metamask.io/download/', '_blank');
+            }
+            log('Attempting to open MetaMask');
+        }
+        
+        function openCoinbaseWallet() {
+            const mobileOS = getMobileOS();
+            if (mobileOS === 'iOS') {
+                window.location.href = 'cbwallet://';
+                setTimeout(() => {
+                    window.open('https://apps.apple.com/app/coinbase-wallet/id1278383455', '_blank');
+                }, 2000);
+            } else if (mobileOS === 'Android') {
+                window.location.href = 'cbwallet://';
+                setTimeout(() => {
+                    window.open('https://play.google.com/store/apps/details?id=org.toshi', '_blank');
+                }, 2000);
+            } else {
+                window.open('https://www.coinbase.com/wallet', '_blank');
+            }
+            log('Attempting to open Coinbase Wallet');
+        }
+        
+        function testWalletConnection() {
+            log('Testing wallet connection...');
+            
+            if (!isMobile()) {
+                log('❌ Not on mobile device');
+                alert('This test is designed for mobile devices');
+                return;
+            }
+            
+            if (typeof window.ethereum === 'undefined') {
+                log('❌ No Web3 provider detected');
+                alert('No wallet detected. Please install Trust Wallet, MetaMask, or Coinbase Wallet');
+                return;
+            }
+            
+            log('✅ Web3 provider detected');
+            log('Provider details: ' + JSON.stringify({
+                isMetaMask: window.ethereum.isMetaMask,
+                isTrust: window.ethereum.isTrust,
+                isCoinbaseWallet: window.ethereum.isCoinbaseWallet,
+                chainId: window.ethereum.chainId
+            }));
+            
+            // Try to connect
+            window.ethereum.request({ method: 'eth_requestAccounts' })
+                .then(accounts => {
+                    log('✅ Wallet connected successfully');
+                    log('Connected account: ' + accounts[0]);
+                    alert('Wallet connected successfully!\nAccount: ' + accounts[0]);
+                })
+                .catch(error => {
+                    log('❌ Wallet connection failed: ' + error.message);
+                    alert('Wallet connection failed: ' + error.message);
+                });
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            refreshInfo();
+            log('Mobile wallet test page loaded');
+        });
+        
+        // Refresh on orientation change
+        window.addEventListener('orientationchange', () => {
+            setTimeout(refreshInfo, 500);
+        });
+    </script>
+</body>
+</html>

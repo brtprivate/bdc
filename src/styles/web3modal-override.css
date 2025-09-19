@@ -23,6 +23,51 @@ w3m-modal wui-wallet-button[data-wallet-id="4622a2b2d6af1c9844944291e5e7351a6aa2
     transform: scale(1.1) !important;
     margin-bottom: 12px !important;
   }
+
+  /* Ensure modal is properly sized on mobile */
+  w3m-modal {
+    --w3m-z-index: 9999 !important;
+  }
+
+  /* Make wallet buttons more touch-friendly */
+  w3m-modal wui-wallet-button {
+    min-height: 64px !important;
+    padding: 12px !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Improve modal positioning on mobile */
+  w3m-modal wui-card {
+    max-height: 90vh !important;
+    margin: 5vh auto !important;
+  }
+
+  /* Better scrolling on mobile */
+  w3m-modal wui-flex[data-scroll="true"] {
+    max-height: 60vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  w3m-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 9999 !important;
+  }
+}
+
+/* Android Chrome specific fixes */
+@media screen and (max-width: 768px) and (orientation: portrait) {
+  w3m-modal wui-card {
+    max-height: 85vh !important;
+    margin-top: 10vh !important;
+  }
 }
 
 

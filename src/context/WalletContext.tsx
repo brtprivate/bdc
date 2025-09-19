@@ -3,6 +3,7 @@ import { useAccount, useDisconnect, useSwitchChain } from 'wagmi';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 import { Address } from 'viem';
 import { dwcContractInteractions } from '../services/contractService';
+import { isMobile, debugMobileWallets, getMobileOS } from '../utils/mobileWalletDetector';
 
 interface WalletContextType {
   account: string | null;
@@ -45,20 +46,37 @@ export const WalletProvider: React.FC<WalletProviderProps> = ({ children }) => {
   // BSC Mainnet chain id is 56
   const isCorrectNetwork = chain?.id === 56;
 
+  // Add error handling for chain detection
+  useEffect(() => {
+    if (isConnected && !chain) {
+      console.warn('Wallet connected but chain not detected');
+    }
+  }, [isConnected, chain]);
+
   const connectWallet = async () => {
     try {
       console.log('Opening wallet connection...');
-      // For mobile devices, add a small delay to ensure proper modal rendering
-      if (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        console.log('Mobile device detected, optimizing connection...');
+      setLoading(true);
+
+      // Enhanced mobile detection and debugging
+      const isMobileDevice = isMobile();
+      const mobileOS = getMobileOS();
+
+      if (isMobileDevice) {
+        console.log(`Mobile device detected: ${mobileOS}`);
+        debugMobileWallets(); // Debug wallet detection
+
+        // Mobile-specific optimizations
         setTimeout(() => {
           open();
-        }, 100);
+        }, 150);
       } else {
+        console.log('Desktop device detected');
         open();
       }
     } catch (error) {
       console.error('Error opening wallet modal:', error);
+      setLoading(false);
     }
   };
 
