@@ -18,6 +18,7 @@ import { logConfigurationStatus } from './utils/configValidator';
 
 // Components & Pages
 import Navbar from './components/Navbar';
+import WalletTestButton from './components/WalletTestButton';
 import MLMDashboard from './pages/MLMDashboard';
 import MyHolding from './pages/MyHolding';
 import MyTeam from './pages/MyTeam';
@@ -103,10 +104,11 @@ function App() {
               <MLMProvider>
                 <Router basename="/app">
                   <Navbar />
+                  <WalletTestButton />
                   <Routes>
                     <Route path="/" element={<MLMDashboard />} />
                     <Route path="/my-holding" element={<MyHolding />} />
-                    {/* <Route path="/my-team" element={<MyTeam />} /> */}
+                    <Route path="/my-team" element={<MyTeam />} />
                     <Route path="/swap" element={<SwapPage />} />
                     <Route path="/rewards" element={<RewardsPage />} />
                     <Route path="/usd/mlm/register" element={<MLMRegister />} />
