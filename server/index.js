@@ -9,25 +9,58 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 1737;
 
-// Configure proper MIME types and mobile-friendly headers
+// Configure comprehensive MIME types and mobile-friendly headers
 app.use((req, res, next) => {
-  // Set proper MIME types for assets
-  if (req.path.endsWith('.css')) {
-    res.setHeader('Content-Type', 'text/css');
-  } else if (req.path.endsWith('.js')) {
-    res.setHeader('Content-Type', 'application/javascript');
-  } else if (req.path.endsWith('.png')) {
-    res.setHeader('Content-Type', 'image/png');
-  } else if (req.path.endsWith('.jpg') || req.path.endsWith('.jpeg')) {
-    res.setHeader('Content-Type', 'image/jpeg');
-  } else if (req.path.endsWith('.svg')) {
-    res.setHeader('Content-Type', 'image/svg+xml');
-  } else if (req.path.endsWith('.ico')) {
-    res.setHeader('Content-Type', 'image/x-icon');
+  // Comprehensive MIME type mapping
+  const mimeTypes = {
+    '.css': 'text/css',
+    '.js': 'application/javascript',
+    '.mjs': 'application/javascript',
+    '.jsx': 'application/javascript',
+    '.ts': 'application/javascript',
+    '.tsx': 'application/javascript',
+    '.json': 'application/json',
+    '.html': 'text/html',
+    '.htm': 'text/html',
+    '.txt': 'text/plain',
+    '.xml': 'application/xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml',
+    '.webp': 'image/webp',
+    '.ico': 'image/x-icon',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+    '.ttf': 'font/ttf',
+    '.eot': 'application/vnd.ms-fontobject',
+    '.otf': 'font/otf',
+    '.mp4': 'video/mp4',
+    '.webm': 'video/webm',
+    '.mp3': 'audio/mpeg',
+    '.wav': 'audio/wav',
+    '.pdf': 'application/pdf',
+    '.zip': 'application/zip'
+  };
+
+  // Set proper MIME type based on file extension
+  const ext = req.path.toLowerCase().substring(req.path.lastIndexOf('.'));
+  if (mimeTypes[ext]) {
+    res.setHeader('Content-Type', mimeTypes[ext]);
   }
 
-  // Mobile-friendly security headers (less restrictive for wallet connections)
-  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // Special handling for JavaScript modules
+  if (req.path.includes('/assets/') && (req.path.endsWith('.js') || req.path.endsWith('.mjs'))) {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  }
+
+  // Special handling for CSS files
+  if (req.path.endsWith('.css')) {
+    res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+  }
 
   // Allow wallet connections and mobile apps
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -35,9 +68,14 @@ app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
   // Mobile-specific headers for better wallet compatibility
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
+  if (req.path.startsWith('/app')) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  } else {
+    // Cache static assets for better performance
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // 1 day
+  }
 
   // Allow iframe embedding for wallet modals (important for mobile wallets)
   res.setHeader('X-Frame-Options', 'ALLOWALL');
@@ -45,23 +83,105 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve React app static assets from /app route with proper options
+// Serve React app static assets from /app route with comprehensive options
 app.use('/app', express.static(join(__dirname, '../dist'), {
   maxAge: '1d',
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, path) => {
-    if (path.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-cache');
+  etag: false,
+  index: false, // Don't serve index.html automatically
+  setHeaders: (res, path, stat) => {
+    // Comprehensive MIME type setting for static files
+    const ext = path.toLowerCase().substring(path.lastIndexOf('.'));
+    const mimeTypes = {
+      '.js': 'application/javascript',
+      '.mjs': 'application/javascript',
+      '.css': 'text/css; charset=utf-8',
+      '.html': 'text/html; charset=utf-8',
+      '.json': 'application/json',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.webp': 'image/webp',
+      '.ico': 'image/x-icon',
+      '.woff': 'font/woff',
+      '.woff2': 'font/woff2',
+      '.ttf': 'font/ttf',
+      '.eot': 'application/vnd.ms-fontobject'
+    };
+
+    if (mimeTypes[ext]) {
+      res.setHeader('Content-Type', mimeTypes[ext]);
+    }
+
+    // Ensure no MIME type sniffing
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    // Special handling for JavaScript files
+    if (ext === '.js' || ext === '.mjs') {
+      res.setHeader('Content-Type', 'application/javascript');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+
+    // Special handling for CSS files
+    if (ext === '.css') {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+
+    // No cache for HTML files
+    if (ext === '.html') {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     }
   }
 }));
 
-// Serve BDC stack static files from root
+// Serve BDC stack static files from root with proper MIME types
 app.use('/', express.static(join(__dirname, 'bdcstack'), {
   maxAge: '1d',
   etag: true,
-  lastModified: true
+  lastModified: true,
+  setHeaders: (res, path, stat) => {
+    // Fix MIME types for BDC stack files
+    const ext = path.toLowerCase().substring(path.lastIndexOf('.'));
+    const mimeTypes = {
+      '.css': 'text/css; charset=utf-8',
+      '.js': 'application/javascript',
+      '.txt': 'text/plain; charset=utf-8',
+      '.html': 'text/html; charset=utf-8',
+      '.json': 'application/json',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.ico': 'image/x-icon',
+      '.woff': 'font/woff',
+      '.woff2': 'font/woff2'
+    };
+
+    if (mimeTypes[ext]) {
+      res.setHeader('Content-Type', mimeTypes[ext]);
+    }
+
+    // Ensure no MIME type sniffing
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+
+    // Fix for .txt files being served as JavaScript
+    if (ext === '.txt') {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    }
+
+    // Fix for CSS files
+    if (ext === '.css') {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    }
+
+    // Fix for JavaScript files
+    if (ext === '.js') {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
 }));
 
 // Special handling for wallet connection requests
@@ -77,9 +197,29 @@ app.use('/app', (req, res, next) => {
   next();
 });
 
+// Handle missing assets with proper error responses
+app.get('/app/assets/*', (req, res) => {
+  // If asset not found, return 404 with proper MIME type
+  const ext = req.path.toLowerCase().substring(req.path.lastIndexOf('.'));
+  const mimeTypes = {
+    '.js': 'application/javascript',
+    '.css': 'text/css',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon'
+  };
+
+  if (mimeTypes[ext]) {
+    res.setHeader('Content-Type', mimeTypes[ext]);
+  }
+
+  res.status(404).send(`/* Asset not found: ${req.path} */`);
+});
+
 // Handle React app routing - serve index.html for any /app/* routes that don't match static files
 app.get('/app/*', (req, res) => {
-  res.setHeader('Content-Type', 'text/html');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
 
   // Mobile-specific headers for wallet compatibility
@@ -89,9 +229,36 @@ app.get('/app/*', (req, res) => {
   res.sendFile(join(__dirname, '../dist/index.html'));
 });
 
+// Handle missing favicon and common assets
+app.get('/favicon.ico', (req, res) => {
+  res.setHeader('Content-Type', 'image/x-icon');
+  res.status(404).send('');
+});
+
+app.get('/usdstack-logo.png', (req, res) => {
+  res.setHeader('Content-Type', 'image/png');
+  res.status(404).send('');
+});
+
+app.get('/main.tsx', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.status(404).send('// File not found');
+});
+
+// Handle missing CSS and JS files with proper MIME types
+app.get('*.css', (req, res) => {
+  res.setHeader('Content-Type', 'text/css; charset=utf-8');
+  res.status(404).send('/* CSS file not found */');
+});
+
+app.get('*.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.status(404).send('// JavaScript file not found');
+});
+
 // Handle root route - serve BDC stack index.html
 app.get('/', (req, res) => {
-  res.setHeader('Content-Type', 'text/html');
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.sendFile(join(__dirname, 'bdcstack/index.html'));
 });
 
