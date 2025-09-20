@@ -470,6 +470,26 @@ const MyTeam = () => {
         return;
       }
 
+      // Check if we have referralStats data with direct referrals for level 1
+      if (level === 1 && teamData.referralStats?.directReferrals?.users) {
+        console.log(`👥 Using direct referrals data for level 1 (${teamData.referralStats.directReferrals.users.length} users)`);
+
+        const directUsers = teamData.referralStats.directReferrals.users.map(user => ({
+          userAddress: user.userAddress,
+          registrationTime: user.registrationTime,
+          status: user.status || 'active',
+          totalInvestment: 0, // Will be updated if investment data is available
+          totalEarnings: 0,
+          investments: [],
+          totalInvestmentAmount: 0,
+          depositCount: 0
+        }));
+
+        setLevelUsers(directUsers);
+        setModalLoading(false);
+        return;
+      }
+
       // If no cached data, try to fetch from referral tree directly
       console.log(`🚀 No cached data, fetching level ${level} users from referral tree`);
 
@@ -626,20 +646,54 @@ const MyTeam = () => {
 
       try {
         const apiData = await apiService.batchFetchTeamData(wallet.account);
-        if (apiData && apiData.tree) {
-          console.log('✅ Enhanced API data fetched successfully');
+        console.log('📊 Raw API data received:', apiData);
 
-          // Merge API data with blockchain data
-          const enhancedTeamData = {
-            ...basicTeamData,
-            ...apiData,
-            enhanced: true
-          };
+        // Process the API data to create proper levels structure
+        let enhancedLevels = [...basicLevels]; // Start with basic structure
+        let referralStats = null;
 
-          setTeamData(enhancedTeamData);
-        } else {
-          console.log('⚠️ API data incomplete, using blockchain data only');
+        // Process stats data (this has the good level information)
+        if (apiData.stats && apiData.stats.success && apiData.stats.data) {
+          referralStats = apiData.stats.data;
+          console.log('✅ Processing referral stats data:', referralStats);
+
+          // Update levels with real data from API
+          if (referralStats.levelSummary) {
+            for (let level = 1; level <= 21; level++) {
+              const levelKey = `level${level}`;
+              const apiLevelData = referralStats.levelSummary[levelKey];
+
+              if (apiLevelData) {
+                enhancedLevels[level - 1] = {
+                  level,
+                  userCount: apiLevelData.userCount || 0,
+                  totalInvestment: apiLevelData.totalInvestment || 0,
+                  totalEarnings: apiLevelData.totalEarnings || 0,
+                  users: [] // Will be populated when user clicks "View Details"
+                };
+              }
+            }
+          }
         }
+
+        // Create enhanced team data with processed levels and updated stats
+        const enhancedTeamData = {
+          ...basicTeamData,
+          // Override with API data if available
+          directReferrals: referralStats?.directReferrals?.count || basicTeamData.directReferrals,
+          totalTeam: referralStats?.totals?.totalTeamSize || basicTeamData.totalTeam,
+          directBusiness: referralStats?.totals?.totalTeamInvestment || basicTeamData.directBusiness,
+          levels: enhancedLevels,
+          dbLevels: enhancedLevels,
+          referralStats,
+          referralTree: apiData.tree?.success ? apiData.tree.data : null,
+          enhanced: true,
+          apiDataAvailable: true
+        };
+
+        console.log('✅ Enhanced team data created:', enhancedTeamData);
+        setTeamData(enhancedTeamData);
+
       } catch (apiError) {
         console.warn('⚠️ API fetch failed, using blockchain data only:', apiError.message);
         // Page already shows blockchain data, so this is fine
