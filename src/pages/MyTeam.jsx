@@ -376,7 +376,7 @@ const MyTeam = () => {
     }
 
     // Open modal immediately with loading state for better UX
-    setSelectedLevel(level);
+   setSelectedLevel(level);
     setModalOpen(true);
     setModalLoading(true);
     setLevelUsers([]);
@@ -387,9 +387,9 @@ const MyTeam = () => {
       // Check if we already have the data from teamData.dbLevels
       const existingLevelData = teamData.dbLevels?.find(l => l.level === level);
       if (existingLevelData && existingLevelData.users && existingLevelData.users.length > 0) {
-        console.log(`📋 Using cached data for level ${level} (${existingLevelData.users.length} users)`);
+        console.log(`📋 Using cached data for level ${level}`);
 
-        // Show cached data immediately
+        // Use cached data and fetch investments in background
         const cachedUsers = existingLevelData.users.map(user => ({
           ...user,
           investments: [],
@@ -399,54 +399,92 @@ const MyTeam = () => {
         setLevelUsers(cachedUsers);
         setModalLoading(false);
 
-        // Skip investment fetching for better performance
-        // Users can see basic info immediately
+        // Fetch detailed investment data in background
+        setTimeout(async () => {
+          try {
+            const usersWithInvestments = await Promise.all(
+              existingLevelData.users.slice(0, 10).map(async (user) => { // Limit to first 10 for performance
+                try {
+                  const investmentResponse = await apiService.getUserInvestments(user.userAddress);
+                  const investments = investmentResponse?.data || investmentResponse || [];
+                  return {
+                    ...user,
+                    investments: investments,
+                    totalInvestmentAmount: investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
+                  };
+                } catch (error) {
+                  return {
+                    ...user,
+                    investments: [],
+                    totalInvestmentAmount: user.totalInvestment || 0
+                  };
+                }
+              })
+            );
+            setLevelUsers(usersWithInvestments);
+          } catch (error) {
+            console.log('Background investment fetch failed:', error);
+          }
+        }, 100);
+
         return;
       }
 
-      // If no cached data, fetch from API
-      console.log(`🚀 No cached data found for level ${level}, fetching from API...`);
+      // Fallback to API call if no cached data
+      const response = await apiService.getUserReferralTree(wallet.account, 21);
+      const responseData = response.data || response;
 
-      try {
-        const response = await apiService.getLevelUsers(level, wallet.account);
+      if (responseData && responseData.tree && responseData.tree[`level${level}`]) {
+        const users = responseData.tree[`level${level}`];
+        console.log(`👥 Found ${users.length} users at level ${level}:`, users);
 
-        if (response.success && response.data) {
-          console.log(`✅ Level ${level} details fetched from API:`, response.data);
+        // Show basic user data first
+        const basicUsers = users.map(user => ({
+          ...user,
+          investments: [],
+          totalInvestmentAmount: user.totalInvestment || 0
+        }));
 
-          // Handle different response formats
-          let users = [];
-          if (response.data.users && Array.isArray(response.data.users)) {
-            users = response.data.users;
-          } else if (Array.isArray(response.data)) {
-            users = response.data;
-          }
-
-          // Format users data for display
-          const formattedUsers = users.map(user => ({
-            ...user,
-            investments: [],
-            totalInvestmentAmount: user.totalInvestment || 0
-          }));
-
-          setLevelUsers(formattedUsers);
-          setModalLoading(false);
-
-          if (formattedUsers.length === 0) {
-            setError(`No users found at level ${level}`);
-          }
-        } else {
-          console.warn(`⚠️ No data found for level ${level}:`, response);
-          setLevelUsers([]);
-          setModalLoading(false);
-          setError(`No users found at level ${level}`);
-        }
-      } catch (apiError) {
-        console.error(`❌ API call failed for level ${level}:`, apiError);
-        setLevelUsers([]);
+        setLevelUsers(basicUsers);
         setModalLoading(false);
-        setError(`Failed to fetch level ${level} details: ${apiError.message}`);
-      }
 
+        // Fetch investment details for first 10 users only (for performance)
+        if (users.length > 0) {
+          setTimeout(async () => {
+            try {
+              const usersWithInvestments = await Promise.all(
+                users.slice(0, 10).map(async (user) => {
+                  try {
+                    const investmentResponse = await apiService.getUserInvestments(user.userAddress);
+                    const investments = investmentResponse?.data || investmentResponse || [];
+                    return {
+                      ...user,
+                      investments: investments,
+                      totalInvestmentAmount: investments.reduce((sum, inv) => sum + (inv.amount || 0), 0)
+                    };
+                  } catch (error) {
+                    return {
+                      ...user,
+                      investments: [],
+                      totalInvestmentAmount: user.totalInvestment || 0
+                    };
+                  }
+                })
+              );
+              setLevelUsers(prev => [
+                ...usersWithInvestments,
+                ...prev.slice(10) // Keep remaining users as-is
+              ]);
+            } catch (error) {
+              console.log('Background investment fetch failed:', error);
+            }
+          }, 100);
+        }
+      } else {
+        console.log(`❌ No users found at level ${level}`);
+        setError(`No users found at level ${level}`);
+        setModalLoading(false);
+      }
     } catch (error) {
       console.error('Error fetching level details:', error);
       setError('Failed to fetch level details: ' + error.message);
@@ -551,6 +589,22 @@ const MyTeam = () => {
         }
       } else {
         console.warn('⚠️ Failed to fetch referral tree:', treeResult.status === 'rejected' ? treeResult.reason : 'Unknown error');
+
+        // If user is not registered, create empty levels structure
+        const errorMessage = treeResult.status === 'rejected' ? treeResult.reason?.message : '';
+        if (errorMessage && errorMessage.includes('User not found')) {
+          console.log('📝 User not registered, showing empty referral tree');
+          // Create empty levels for unregistered users
+          for (let level = 1; level <= 21; level++) {
+            dbLevels.push({
+              level,
+              userCount: 0,
+              users: [],
+              totalInvestment: 0,
+              totalEarnings: 0,
+            });
+          }
+        }
       }
 
       // Process stats data
@@ -667,6 +721,22 @@ const MyTeam = () => {
       fetchTeamData();
     }
   }, [wallet.isConnected, wallet.account, chainId]);
+
+  // Memoized calculations for summary cards
+  const activeLevelsCount = React.useMemo(() =>
+    teamData.dbLevels ? teamData.dbLevels.filter(level => level.userCount > 0).length : 0,
+    [teamData.dbLevels]
+  );
+
+  const totalUsersCount = React.useMemo(() =>
+    teamData.dbLevels ? teamData.dbLevels.reduce((sum, level) => sum + level.userCount, 0) : 0,
+    [teamData.dbLevels]
+  );
+
+  const totalInvestmentAmount = React.useMemo(() =>
+    formatCurrency(teamData.dbLevels ? teamData.dbLevels.reduce((sum, level) => sum + level.totalInvestment, 0) : 0),
+    [teamData.dbLevels, formatCurrency]
+  );
 
   // Memoized calculations for summary cards with better performance
   const summaryStats = React.useMemo(() => {
@@ -1105,7 +1175,7 @@ const MyTeam = () => {
                   <TableBody>
                     {levelUsers.map((user, index) => (
                       <TableRow
-                        key={user.userAddress}
+                        key={user.walletAddress || user.userAddress}
                         sx={{
                           '&:nth-of-type(odd)': { backgroundColor: '#fafafa' },
                           '&:hover': { backgroundColor: '#f0f0f0' }
@@ -1128,7 +1198,7 @@ const MyTeam = () => {
                                 wordBreak: 'break-all'
                               }}
                             >
-                              {user.userAddress}
+                              {user.walletAddress || user.userAddress}
                             </Typography>
                             {user.investments && user.investments.length > 0 && (
                               <Typography variant="caption" color="text.secondary">
@@ -1193,7 +1263,7 @@ const MyTeam = () => {
                           user.investments && user.investments.length > 0 ?
                             user.investments.map((investment, invIndex) => (
                               <TableRow
-                                key={`${user.userAddress}-${invIndex}`}
+                                key={`${user.walletAddress || user.userAddress}-${invIndex}`}
                                 sx={{
                                   '&:nth-of-type(odd)': { backgroundColor: '#fafafa' },
                                   '&:hover': { backgroundColor: '#f0f0f0' }
@@ -1208,7 +1278,7 @@ const MyTeam = () => {
                                       wordBreak: 'break-all'
                                     }}
                                   >
-                                    {user.userAddress.slice(0, 10)}...{user.userAddress.slice(-8)}
+                                    {(user.walletAddress || user.userAddress).slice(0, 10)}...{(user.walletAddress || user.userAddress).slice(-8)}
                                   </Typography>
                                 </TableCell>
                                 <TableCell align="center">
