@@ -7,7 +7,7 @@ import {
 } from "@wagmi/core";
 import { ethers } from "ethers";
 
-import type { Address, Address } from "viem";
+import type { Address } from "viem";
 import {
   decodeErrorResult,
   formatEther,
@@ -638,11 +638,11 @@ interface UserInfo {
 
 interface OrderInfo {
   amount: bigint;
-  holdingbonus: bigint;
+  releaseStackBonus: bigint;
   deposit_time: bigint;
   reward_time: bigint;
   isactive: boolean;
-  isdai: boolean;
+  isUsdt: boolean;
 }
 
 interface Rank {
@@ -1867,7 +1867,7 @@ export const dwcContractInteractions: DWCContractInteractions = {
 
   async getOrderInfo(user: Address, index: bigint): Promise<OrderInfo> {
     try {
-      const [amount, holdingbonus, deposit_time, reward_time, isactive, isdai] =
+      const [amount, releaseStackBonus, deposit_time, reward_time, isactive, isUsdt] =
         (await readContract(config, {
           abi: DWC_ABI,
           address: DWC_CONTRACT_ADDRESS,
@@ -1877,19 +1877,19 @@ export const dwcContractInteractions: DWCContractInteractions = {
         })) as [bigint, bigint, bigint, bigint, boolean, boolean];
       console.log(`Order info for ${user} at index ${index}:`, {
         amount,
-        holdingbonus,
+        releaseStackBonus,
         deposit_time,
         reward_time,
         isactive,
-        isdai,
+        isUsdt,
       });
       return {
         amount,
-        holdingbonus,
+        releaseStackBonus,
         deposit_time,
         reward_time,
         isactive,
-        isdai,
+        isUsdt,
       };
     } catch (error: any) {
       console.error(`Error fetching order info: ${error.message || error}`);

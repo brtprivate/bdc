@@ -50,6 +50,7 @@ import {
 } from 'lucide-react';
 import ContractStatsSection from '../components/sections/ContractStatsSection';
 import DatabaseStatus from '../components/sections/DatabaseStatus';
+import StakingOrdersSection from '../components/StakingOrdersSection';
 import { useWeb3Modal } from '@web3modal/wagmi/react';
 
 // Styled Grid component to enforce mobile-first layout
@@ -1682,7 +1683,7 @@ const MLMDashboard = () => {
                     <TableHead>
                       <TableRow>
                         <TableCell>Amount (USDT)</TableCell>
-                        <TableCell>Holding Bonus</TableCell>
+                        <TableCell>Release Stack Bonus</TableCell>
                         <TableCell>Deposit Time</TableCell>
                         <TableCell>Action</TableCell>
                       </TableRow>
@@ -1691,7 +1692,7 @@ const MLMDashboard = () => {
                       {(expandedSections.orders ? orders : orders.slice(0, 3)).map((order, index) => (
                         <TableRow key={index}>
                           <TableCell>{formatUnits(order.amount, 18)}</TableCell>
-                          <TableCell>{formatUnits(order.holdingbonus, 18)}</TableCell>
+                          <TableCell>{formatUnits(order.releaseStackBonus || 0n, 18)}</TableCell>
                           <TableCell>{formatDate(order.deposit_time)}</TableCell>
                           <TableCell>
                             {order.isactive && (
@@ -1729,8 +1730,15 @@ const MLMDashboard = () => {
           </Card>
         </Grid>
 
-
-
+        {/* Staking Orders Section */}
+        <Grid item xs={12} sx={{ order: 4 }}>
+          <StakingOrdersSection
+            orders={orders}
+            isLoading={isLoading}
+            onRefresh={fetchMlmData}
+            notRegistered={notRegistered}
+          />
+        </Grid>
 
       </Grid>
     </Container >
