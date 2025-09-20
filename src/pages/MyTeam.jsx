@@ -578,25 +578,71 @@ const MyTeam = () => {
 
       console.log('🚀 MyTeam: Starting optimized data fetch...');
 
-      // Parallel fetch of blockchain and database data for better performance
-      const [blockchainData, databaseData] = await Promise.allSettled([
-        // Blockchain data
-        Promise.all([
-          dwcContractInteractions.getTeamCount(wallet.account),
-          dwcContractInteractions.getUserRank(wallet.account),
-        ]),
-        // Database data (batch fetch)
-        apiService.batchFetchTeamData(wallet.account)
+      // First, get blockchain data (this always works)
+      console.log('📊 Fetching blockchain data...');
+      const [teamCount, userRank] = await Promise.all([
+        dwcContractInteractions.getTeamCount(wallet.account),
+        dwcContractInteractions.getUserRank(wallet.account),
       ]);
 
-      // Process blockchain data
-      let teamCount, userRank;
-      if (blockchainData.status === 'fulfilled') {
-        [teamCount, userRank] = blockchainData.value;
-        console.log('✅ Blockchain data fetched successfully');
-      } else {
-        console.error('❌ Blockchain data fetch failed:', blockchainData.reason);
-        throw new Error('Failed to fetch blockchain data');
+      console.log('✅ Blockchain data fetched successfully:', { teamCount, userRank });
+
+      // Create basic levels structure (21 levels) from contract data
+      const basicLevels = [];
+      for (let level = 1; level <= 21; level++) {
+        basicLevels.push({
+          level,
+          userCount: 0, // Will be updated by API if available
+          totalInvestment: 0,
+          totalEarnings: 0,
+          users: []
+        });
+      }
+
+      // Create basic team data from blockchain with proper structure
+      const basicTeamData = {
+        directReferrals: Number(userInfo.partnersCount) || 0,
+        directBusiness: parseFloat(formatUnits(userInfo.directBusiness || 0n, 18)) || 0,
+        majorTeam: Number(teamCount.maxTeam) || 0,
+        minorTeam: Number(teamCount.otherTeam) || 0,
+        totalTeam: Number(userInfo.teamCount) || 0,
+        userRank: getRankName(Number(userRank) || 0),
+        levelIncome: parseFloat(formatUnits(userInfo.levelincome || 0n, 18)) || 0,
+        royaltyIncome: parseFloat(formatUnits(userInfo.royaltyincome || 0n, 18)) || 0,
+        userInfo,
+        levels: basicLevels, // Basic structure, will be enhanced by API data
+        dbLevels: basicLevels, // Same as levels for now
+        referralTree: null, // Will be populated by API data if available
+        referralStats: null, // Will be populated by API data if available
+        timestamp: new Date().toISOString()
+      };
+
+      // Set basic data immediately so page shows something
+      setTeamData(basicTeamData);
+      setIsLoading(false);
+
+      // Now try to fetch enhanced data from API in background (non-blocking)
+      console.log('🔄 Attempting to fetch enhanced API data...');
+
+      try {
+        const apiData = await apiService.batchFetchTeamData(wallet.account);
+        if (apiData && apiData.tree) {
+          console.log('✅ Enhanced API data fetched successfully');
+
+          // Merge API data with blockchain data
+          const enhancedTeamData = {
+            ...basicTeamData,
+            ...apiData,
+            enhanced: true
+          };
+
+          setTeamData(enhancedTeamData);
+        } else {
+          console.log('⚠️ API data incomplete, using blockchain data only');
+        }
+      } catch (apiError) {
+        console.warn('⚠️ API fetch failed, using blockchain data only:', apiError.message);
+        // Page already shows blockchain data, so this is fine
       }
 
       if (process.env.NODE_ENV === 'development') {
@@ -644,95 +690,9 @@ const MyTeam = () => {
         console.log('Levels Data:', levels);
       }
 
-      // Process database data from batch fetch
-      let referralTree = null;
-      let referralStats = null;
-      let dbLevels = [];
-
-      if (databaseData.status === 'fulfilled') {
-        const { tree, stats, summary } = databaseData.value;
-
-        console.log('📊 Processing batch-fetched database data...');
-
-        // Process referral tree
-        if (tree.success && tree.data) {
-          referralTree = tree.data;
-          console.log('✅ Referral tree processed from batch fetch');
-        } else {
-          console.warn('⚠️ Referral tree not available in batch fetch:', tree.error);
-        }
-
-        // Process referral stats
-        if (stats.success && stats.data) {
-          referralStats = stats.data;
-          console.log('✅ Referral stats processed from batch fetch');
-        } else {
-          console.warn('⚠️ Referral stats not available in batch fetch:', stats.error);
-        }
-
-        // Process database levels (1-21) with optimized data structure
-        if (referralTree && referralTree.tree) {
-          console.log('📊 Processing 21 levels data from batch fetch...');
-
-          for (let level = 1; level <= 21; level++) {
-            const levelKey = `level${level}`;
-            const levelUsers = referralTree.tree[levelKey] || [];
-
-            dbLevels.push({
-              level,
-              userCount: levelUsers.length,
-              users: levelUsers,
-              totalInvestment: levelUsers.reduce((sum, user) => sum + (user.totalInvestment || 0), 0),
-              totalEarnings: levelUsers.reduce((sum, user) => sum + (user.totalEarnings || 0), 0),
-            });
-          }
-
-          console.log(`✅ Processed ${dbLevels.length} levels with ${dbLevels.reduce((sum, level) => sum + level.userCount, 0)} total users`);
-        } else {
-          console.warn('⚠️ No referral tree data available, creating empty levels structure');
-          // Create empty structure for all 21 levels
-          for (let level = 1; level <= 21; level++) {
-            dbLevels.push({
-              level,
-              userCount: 0,
-              users: [],
-              totalInvestment: 0,
-              totalEarnings: 0,
-            });
-          }
-        }
-      } else {
-        console.error('❌ Database batch fetch failed:', databaseData.reason);
-        // Create empty structure for all 21 levels as fallback
-        for (let level = 1; level <= 21; level++) {
-          dbLevels.push({
-            level,
-            userCount: 0,
-            users: [],
-            totalInvestment: 0,
-            totalEarnings: 0,
-          });
-        }
-      }
-
-      setTeamData({
-        directReferrals: Number(userInfo.partnersCount) || 0,
-        directBusiness: parseFloat(formatUnits(userInfo.directBusiness || 0n, 18)) || 0,
-        majorTeam: Number(teamCount.maxTeam) || 0,
-        minorTeam: Number(teamCount.otherTeam) || 0,
-        userRank: getRankLabel(currentUserRank),
-        levelIncome: parseFloat(formatUnits(userInfo.levelincome || 0n, 18)) || 0,
-        royaltyIncome: parseFloat(formatUnits(userInfo.royaltyincome || 0n, 18)) || 0,
-        totalTeam: Number(userInfo.teamCount) || 0,
-        levels,
-        dbLevels,
-        referralTree,
-        referralStats,
-      });
-
       // Performance logging
       const endTime = performance.now();
-      const loadTime = endTime - loadingStartTime;
+      const loadTime = endTime - startTime;
       console.log(`✅ MyTeam: Data fetch completed in ${loadTime.toFixed(2)}ms`);
 
       if (loadTime > 3000) {
