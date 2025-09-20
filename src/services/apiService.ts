@@ -146,20 +146,32 @@ class ApiService {
     }
   }
 
-  // Get user referral tree (all 21 levels) - Using direct User model
+  // Get user referral tree (all 21 levels) - Using optimized ultra-fast endpoint
   async getUserReferralTree(userAddress: string, levels: number = 21): Promise<ApiResponse<any>> {
     try {
       console.log(`🌳 Fetching referral tree for user: ${userAddress} (${levels} levels)`);
-      const response = await this.makeRequest(`/referrals/tree-direct/${userAddress}?levels=${levels}`);
-      console.log(`✅ Referral tree fetched successfully`);
-      return response;
+
+      // Try ultra-optimized endpoint first for better performance
+      const response = await this.makeRequest(`/referrals/tree-ultra-optimized/${userAddress}?levels=${levels}&limit=500`);
+
+      if (response.success) {
+        console.log(`✅ Referral tree fetched successfully via ultra-optimized endpoint`);
+        return response;
+      }
+
+      // Fallback to direct endpoint if ultra-optimized fails
+      console.log(`⚠️ Ultra-optimized endpoint failed, falling back to direct endpoint`);
+      const fallbackResponse = await this.makeRequest(`/referrals/tree-direct/${userAddress}?levels=${levels}`);
+      console.log(`✅ Referral tree fetched successfully via fallback endpoint`);
+      return fallbackResponse;
+
     } catch (error) {
       console.error(`❌ Failed to fetch referral tree:`, error);
       throw error;
     }
   }
 
-  // Get user referral statistics - Using direct User model
+  // Get user referral statistics - Using optimized direct User model with caching
   async getUserReferralStats(userAddress: string): Promise<ApiResponse<any>> {
     try {
       console.log(`📈 Fetching referral stats for user: ${userAddress}`);
@@ -172,7 +184,7 @@ class ApiService {
     }
   }
 
-  // Get users in a specific level
+  // Get users in a specific level with optimized performance (kept for future use)
   async getLevelUsers(level: number, referrerAddress: string): Promise<ApiResponse<any>> {
     try {
       console.log(`👥 Fetching level ${level} users for referrer: ${referrerAddress}`);
@@ -181,6 +193,58 @@ class ApiService {
       return response;
     } catch (error) {
       console.error(`❌ Failed to fetch level users:`, error);
+      throw error;
+    }
+  }
+
+  // Get comprehensive user analytics with caching (optimized for MyTeam page)
+  async getUserTeamAnalytics(userAddress: string): Promise<ApiResponse<any>> {
+    try {
+      console.log(`📊 Fetching comprehensive team analytics for user: ${userAddress}`);
+      const response = await this.makeRequest(`/levels/user/${userAddress}?details=true&limit=100`);
+      console.log(`✅ Team analytics fetched successfully`);
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to fetch team analytics:`, error);
+      throw error;
+    }
+  }
+
+  // Get quick team summary for faster initial load
+  async getQuickTeamSummary(userAddress: string): Promise<ApiResponse<any>> {
+    try {
+      console.log(`⚡ Fetching quick team summary for user: ${userAddress}`);
+      const response = await this.makeRequest(`/levels/user/${userAddress}/summary`);
+      console.log(`✅ Quick team summary fetched successfully`);
+      return response;
+    } catch (error) {
+      console.error(`❌ Failed to fetch quick team summary:`, error);
+      throw error;
+    }
+  }
+
+  // Batch fetch multiple API calls for better performance
+  async batchFetchTeamData(userAddress: string): Promise<{
+    tree: ApiResponse<any>;
+    stats: ApiResponse<any>;
+    summary: ApiResponse<any>;
+  }> {
+    try {
+      console.log(`🚀 Batch fetching team data for user: ${userAddress}`);
+
+      const [treeResponse, statsResponse, summaryResponse] = await Promise.allSettled([
+        this.getUserReferralTree(userAddress, 21),
+        this.getUserReferralStats(userAddress),
+        this.getQuickTeamSummary(userAddress)
+      ]);
+
+      return {
+        tree: treeResponse.status === 'fulfilled' ? treeResponse.value : { success: false, error: 'Tree fetch failed' },
+        stats: statsResponse.status === 'fulfilled' ? statsResponse.value : { success: false, error: 'Stats fetch failed' },
+        summary: summaryResponse.status === 'fulfilled' ? summaryResponse.value : { success: false, error: 'Summary fetch failed' }
+      };
+    } catch (error) {
+      console.error(`❌ Failed to batch fetch team data:`, error);
       throw error;
     }
   }
