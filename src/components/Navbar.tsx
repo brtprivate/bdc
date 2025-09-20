@@ -151,7 +151,7 @@ const Navbar: React.FC<NavbarProps> = ({
         <Box
           sx={{
             width: "100%",
-            backgroundColor: "#D32F2F",
+            backgroundColor: "#1ee538ff",
             textAlign: "center",
             py: 0.5,
           }}
