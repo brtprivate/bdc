@@ -606,7 +606,7 @@ const MyTeam = () => {
         majorTeam: Number(teamCount.maxTeam) || 0,
         minorTeam: Number(teamCount.otherTeam) || 0,
         totalTeam: Number(userInfo.teamCount) || 0,
-        userRank: getRankName(Number(userRank) || 0),
+        userRank: getRankLabel(Number(userRank) || 0),
         levelIncome: parseFloat(formatUnits(userInfo.levelincome || 0n, 18)) || 0,
         royaltyIncome: parseFloat(formatUnits(userInfo.royaltyincome || 0n, 18)) || 0,
         userInfo,
