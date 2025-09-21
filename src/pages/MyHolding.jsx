@@ -191,7 +191,7 @@ const MyHolding = () => {
 
   const investmentData = orders.map((order, index) => ({
     id: index,
-    plan: order.isdai ? 'USDT' : 'DWC', // Updated to USDC
+    plan: order.isdai ? 'USDT' : 'BDC', // Updated to USDC
     amount: parseFloat(formatUnits(order.amount, 18)) || 0,
     status: order.isactive ? 'Active' : 'Completed',
     date: order.deposit_time ? formatDate(order.deposit_time) : 'N/A',
